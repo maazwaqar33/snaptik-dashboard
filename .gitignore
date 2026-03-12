@@ -1,0 +1,76 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+out
+dist
+build
+*.tsbuildinfo
+
+# Environment files
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Allow .env.example
+!.env.example
+
+# Turborepo
+.turbo
+
+# Testing
+coverage
+.nyc_output
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Vercel
+.vercel
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor
+.idea
+.vscode
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.history
+
+# Logs
+logs
+*.log
+
+# pnpm
+.pnpm-store
+
+# AWS SAM / Serverless
+.aws-sam
+.serverless
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/

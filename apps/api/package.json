@@ -1,0 +1,12 @@
+{
+  "name": "@snaptik/api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  }
+}
