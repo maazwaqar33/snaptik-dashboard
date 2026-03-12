@@ -10,10 +10,10 @@ export default function GlobalError({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black text-white">
       <h1 className="font-outfit text-2xl font-bold">Something went wrong</h1>
-      <p className="text-[#AAAAAA]">{error.message}</p>
+      <p className="text-muted">{error.message}</p>
       <button
         onClick={reset}
-        className="rounded-lg bg-[#007AFF] px-4 py-2 text-sm font-medium text-white hover:bg-[#007AFF]/90"
+        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
       >
         Try again
       </button>
