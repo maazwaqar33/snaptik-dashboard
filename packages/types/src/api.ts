@@ -1,3 +1,5 @@
+import type { AdminUser } from './admin';
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -20,7 +22,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   accessToken: string;
-  admin: import('./admin').AdminUser;
+  admin: AdminUser;
 }
 
 export interface DashboardStats {

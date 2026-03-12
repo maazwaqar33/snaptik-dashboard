@@ -70,6 +70,13 @@ logs
 .aws-sam
 .serverless
 
+# Private keys / certificates (NEVER commit these)
+*.pem
+*.key
+*.p12
+*.pfx
+cloudfront-private-key*
+
 # Playwright
 /test-results/
 /playwright-report/
