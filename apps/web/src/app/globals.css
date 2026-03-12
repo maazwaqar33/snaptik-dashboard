@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* SnapTik Admin Design System */
+    --bg: 0 0% 0%;             /* #000000 - Carbon Black */
+    --surface: 0 0% 7%;         /* #121212 - Card surface */
+    --surface-border: 0 0% 100% / 0.1;  /* rgba(255,255,255,0.1) */
+    --text-primary: 0 0% 100%;  /* #FFFFFF */
+    --text-secondary: 0 0% 67%; /* #AAAAAA */
+    --accent: 211 100% 50%;     /* #007AFF - System Blue */
+    --danger: 4 100% 59%;       /* #FF3B30 - Alert Red */
+    --success: 142 76% 54%;     /* #34C759 */
+    --warning: 35 100% 50%;     /* #FF9500 */
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-white/10;
+  }
+  body {
+    @apply bg-black text-white;
+  }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-white/20 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-white/30; }
+}
+
+@layer utilities {
+  .font-outfit { font-family: var(--font-outfit), sans-serif; }
+  .font-inter { font-family: var(--font-inter), sans-serif; }
+  .bg-surface { background-color: hsl(var(--surface)); }
+  .text-muted { color: hsl(var(--text-secondary)); }
+  .border-surface { border-color: hsl(var(--surface-border)); }
+}
