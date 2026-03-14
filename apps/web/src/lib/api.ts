@@ -19,6 +19,9 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // Auto-refresh on 401
+// NOTE: This middleware checks cookie presence only. Token signature/expiry validation
+// is enforced server-side on every API call. The refresh logic here handles the client
+// side of the JWT rotation flow.
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (v: string) => void; reject: (e: unknown) => void }> = [];
 
@@ -30,10 +33,25 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
+const redirectToLogin = () => {
+  // Guard for SSR safety — this file may be imported in server context
+  if (typeof window !== 'undefined') {
+    Cookies.remove('admin_access_token');
+    window.location.href = '/login';
+  }
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // Don't intercept the refresh endpoint itself — prevents infinite recursion
+    if (originalRequest?.url?.includes('/auth/refresh')) {
+      processQueue(error, null);
+      redirectToLogin();
+      return Promise.reject(error);
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -61,8 +79,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        Cookies.remove('admin_access_token');
-        window.location.href = '/login';
+        redirectToLogin();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

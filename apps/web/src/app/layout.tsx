@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${outfit.variable} ${inter.variable}`}>
+    <html lang="en" className={`dark ${outfit.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-black font-inter text-white antialiased">
         <Providers>{children}</Providers>
       </body>
