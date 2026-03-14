@@ -1,0 +1,129 @@
+name: Deploy API (EC2)
+
+# API deployments are gated behind a release tag (e.g. v1.2.3) rather than
+# every main push — API changes affect the running database and live users.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false # never cancel an in-flight API deploy
+
+jobs:
+  test:
+    name: Test API before deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck API
+        run: pnpm --filter @snaptik/api run typecheck
+
+      - name: Run API tests
+        run: pnpm --filter @snaptik/api run test --passWithNoTests
+        env:
+          NODE_ENV: test
+          MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+          JWT_SECRET: test-secret-at-least-32-characters-long
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 15
+    environment:
+      name: production-api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build API Docker image
+        run: |
+          docker build \
+            -t snaptik-admin-api:${{ github.ref_name }} \
+            -t snaptik-admin-api:latest \
+            -f apps/api/Dockerfile \
+            .
+
+      - name: Save Docker image
+        run: docker save snaptik-admin-api:latest | gzip > /tmp/snaptik-admin-api.tar.gz
+
+      - name: Copy image to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          source:   /tmp/snaptik-admin-api.tar.gz
+          target:   /tmp/
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "=== Loading Docker image ==="
+            docker load < /tmp/snaptik-admin-api.tar.gz
+
+            echo "=== Stopping old container ==="
+            docker stop snaptik-admin-api 2>/dev/null || true
+            docker rm   snaptik-admin-api 2>/dev/null || true
+
+            echo "=== Starting new container ==="
+            docker run -d \
+              --name snaptik-admin-api \
+              --restart unless-stopped \
+              -p 5001:5001 \
+              --env-file /home/${{ secrets.EC2_USER }}/snaptik-admin.env \
+              snaptik-admin-api:latest
+
+            echo "=== Health check ==="
+            sleep 5
+            curl -sf http://localhost:5001/health || (docker logs snaptik-admin-api && exit 1)
+
+            echo "=== Cleanup ==="
+            docker image prune -f
+            rm /tmp/snaptik-admin-api.tar.gz
+
+            echo "=== Done: ${{ github.ref_name }} deployed ==="
+
+# Required secrets (add in repo Settings → Secrets):
+#   EC2_HOST            — EC2 public IP or hostname
+#   EC2_USER            — EC2 username (typically 'ubuntu' or 'ec2-user')
+#   EC2_SSH_KEY         — Private SSH key (PEM format, the matching .pub key must be in EC2 authorized_keys)
+#   TEST_MONGODB_URI    — MongoDB URI for CI test database (separate from production)
+#
+# On the EC2 instance, create ~/snaptik-admin.env with:
+#   NODE_ENV=production
+#   PORT=5001
+#   MONGODB_URI=...
+#   JWT_SECRET=...
+#   CLOUDFRONT_KEY_PAIR_ID=...
+#   CLOUDFRONT_PRIVATE_KEY=...
+#   AWS_REGION=...
+#   SES_FROM_EMAIL=...
