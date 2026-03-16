@@ -9,9 +9,9 @@ on:
       - 'apps/api/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
-  push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch: # manual trigger from GitHub Actions UI
 
 concurrency:
   group: deploy-api
