@@ -3,6 +3,9 @@
   "buildCommand": "cd ../.. && pnpm --filter @snaptik/web build",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "/api/proxy"
+  },
   "headers": [
     {
       "source": "/(.*)",

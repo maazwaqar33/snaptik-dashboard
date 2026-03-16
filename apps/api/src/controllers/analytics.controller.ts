@@ -1,5 +1,8 @@
 import type { Request, Response } from 'express';
 import { AuditLog } from '../models/audit.model';
+import { AppUser } from '../models/app_user.model';
+import { FlaggedContent } from '../models/flagged_content.model';
+import { Report } from '../models/report.model';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,16 +30,24 @@ function seededRand(seed: number): number {
 // GET /analytics/overview
 // ---------------------------------------------------------------------------
 export async function getOverview(_req: Request, res: Response): Promise<void> {
+  // Real counts from admin DB
+  const [totalUsers, flaggedPending, openReports] = await Promise.all([
+    AppUser.countDocuments(),
+    FlaggedContent.countDocuments({ moderationStatus: 'pending' }),
+    Report.countDocuments({ status: { $in: ['pending', 'in_review'] } }),
+  ]);
+
+  // Note: MAU/DAU/totalVideos/revenue require main app telemetry — shown as 0 until integrated
   res.json({
     kpis: {
-      mau:            284_000,
-      dau:             47_300,
-      totalUsers:     612_840,
-      totalVideos:  1_204_550,
-      flaggedPending:     184,
-      openReports:        312,
-      openTickets:         47,
-      revenue:         38_420,   // USD, current month
+      mau:            0,
+      dau:            0,
+      totalUsers,
+      totalVideos:    0,
+      flaggedPending,
+      openReports,
+      openTickets: 0,
+      revenue:        0,
     },
     period: '30d',
   });

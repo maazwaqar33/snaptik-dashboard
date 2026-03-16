@@ -11,7 +11,7 @@ const cookieOpts = {
   httpOnly: true,
   secure:   config.cookieSecure,
   sameSite: config.cookieSameSite,
-  path:     '/api/v1/auth/refresh',
+  path:     '/',
   maxAge:   7 * 24 * 60 * 60 * 1000,
 } as const;
 
