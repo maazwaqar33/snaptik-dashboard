@@ -40,9 +40,9 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
     method:  req.method,
     headers: reqHeaders,
     body,
-    // @ts-expect-error — node-fetch needs this to avoid caching
-    cache: 'no-store',
-    duplex: 'half',
+    cache:   'no-store',
+    // duplex required when body is a stream; cast to allow the property
+    ...({ duplex: 'half' } as object),
   } as RequestInit);
 
   // Forward response headers (minus hop-by-hop), rewriting cookie paths
