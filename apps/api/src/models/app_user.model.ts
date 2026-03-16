@@ -57,8 +57,7 @@ const AppUserSchema = new Schema<IAppUser>(
   { timestamps: true, collection: 'app_users' },
 );
 
-AppUserSchema.index({ username: 1 });
-AppUserSchema.index({ email: 1 });
+// username + email are already indexed via unique:true on the field
 AppUserSchema.index({ isBanned: 1 });
 AppUserSchema.index({ isVerified: 1 });
 
