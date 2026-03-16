@@ -63,6 +63,14 @@ app.get('/health',          healthHandler);
 app.get('/api/v1/health',   healthHandler);
 
 // ── Swagger UI ────────────────────────────────────────────────────────────────
+// Override Helmet's strict CSP for the docs route — Swagger UI needs unsafe-inline
+app.use('/api/v1/docs', (_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' http: https:;",
+  );
+  next();
+});
 app.use(
   '/api/v1/docs',
   swaggerUi.serve,
