@@ -1,11 +1,13 @@
 import 'dotenv/config';
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
-import cookieParser from 'cookie-parser';
-import cors         from 'cors';
-import helmet       from 'helmet';
-import morgan       from 'morgan';
-import rateLimit    from 'express-rate-limit';
+import cookieParser    from 'cookie-parser';
+import cors            from 'cors';
+import helmet          from 'helmet';
+import morgan          from 'morgan';
+import rateLimit       from 'express-rate-limit';
+import swaggerUi       from 'swagger-ui-express';
 import { Error as MongooseError } from 'mongoose';
+import { openApiSpec } from './openapi';
 
 import { config, connectDB }  from './config';
 import authRoutes             from './routes/auth.routes';
@@ -54,10 +56,21 @@ app.use('/api/v1/settings',  settingsRoutes);
 app.use('/api/v1/admins',    adminsRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 
-// ── Health check ─────────────────────────────────────────────────────────────
-app.get('/health', (_req, res) => {
+// ── Health check (both paths for convenience) ─────────────────────────────────
+const healthHandler = (_req: Request, res: Response) =>
   res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
-});
+app.get('/health',          healthHandler);
+app.get('/api/v1/health',   healthHandler);
+
+// ── Swagger UI ────────────────────────────────────────────────────────────────
+app.use(
+  '/api/v1/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(openApiSpec, {
+    customSiteTitle: 'SnapTik Admin API',
+    swaggerOptions: { persistAuthorization: true },
+  }),
+);
 
 // ── 404 handler ──────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
