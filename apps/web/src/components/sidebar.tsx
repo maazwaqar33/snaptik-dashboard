@@ -12,7 +12,6 @@ import {
   ScrollText,
   UserCog,
   Settings,
-  Radio,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -78,12 +77,13 @@ const NAV_ITEMS: NavItem[] = [
     icon: ScrollText,
     permission: ['read', 'auditlog'],
   },
-  {
-    label: 'Live Monitor',
-    href: '/dashboard/live',
-    icon: Radio,
-    permission: ['read', 'analytics'],
-  },
+  // Live Monitor — coming soon, hidden until WebSocket integration is complete
+  // {
+  //   label: 'Live Monitor',
+  //   href: '/dashboard/live',
+  //   icon: Radio,
+  //   permission: ['read', 'analytics'],
+  // },
   {
     label: 'Admins',
     href: '/dashboard/admins',

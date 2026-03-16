@@ -8,9 +8,7 @@ import Cookies from 'js-cookie';
 import { cn } from '@/lib/cn';
 import type { Alert } from '@snaptik/types';
 
-const SOCKET_URL =
-  (process.env.NEXT_PUBLIC_SOCKET_URL as string | undefined) ??
-  'http://localhost:5001';
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string | undefined;
 
 const MAX_ALERTS = 50;
 
@@ -63,7 +61,7 @@ export function AlertsFeed() {
 
   useEffect(() => {
     const token = Cookies.get('admin_access_token');
-    if (!token) return;
+    if (!token || !SOCKET_URL) return;
 
     const socket = io(`${SOCKET_URL}/admin`, {
       auth: { token },

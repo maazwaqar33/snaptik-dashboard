@@ -1,0 +1,1139 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "SnapTik Admin API",
+    "description": "Postman collection for the SnapTik Admin API (Express + MongoDB). Base URL: http://localhost:5001/api/v1\n\n**Setup:**\n1. Create a Postman environment and set `base_url` = `http://localhost:5001/api/v1`\n2. Run the Login request — the test script will automatically save `access_token` to your environment.\n3. All subsequent requests use `{{access_token}}` via Bearer auth.\n\n**QA Credentials:**\n- super_admin: admin@snaptik.com / Admin@1234!\n- moderator: moderator@snaptik.com / Mod@1234!\n- support: support@snaptik.com / Support@1\n- analyst: analyst@snaptik.com / Analyst@1\n- auditor: auditor@snaptik.com / Auditor@1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints — login, logout, token refresh, password reset, and invite-based registration.",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.accessToken) {",
+                  "        pm.environment.set('access_token', json.accessToken);",
+                  "        console.log('access_token saved:', json.accessToken.substring(0, 20) + '...');",
+                  "    }",
+                  "    pm.test('Login successful', () => pm.response.to.have.status(200));",
+                  "    pm.test('Response has accessToken', () => pm.expect(json).to.have.property('accessToken'));",
+                  "    pm.test('Response has user', () => pm.expect(json).to.have.property('user'));",
+                  "} else {",
+                  "    pm.test('Login failed', () => pm.response.to.have.status(200));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@snaptik.com\",\n  \"password\": \"Admin@1234!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate an admin user and receive a JWT access token. The test script automatically saves the `accessToken` to the `access_token` environment variable.\n\n**QA Credentials:**\n- super_admin: admin@snaptik.com / Admin@1234!\n- moderator: moderator@snaptik.com / Mod@1234!\n- support: support@snaptik.com / Support@1\n- analyst: analyst@snaptik.com / Analyst@1\n- auditor: auditor@snaptik.com / Auditor@1\n\n**Example Response:**\n```json\n{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"admin-001\",\n    \"email\": \"admin@snaptik.com\",\n    \"name\": \"Super Admin\",\n    \"role\": \"super_admin\",\n    \"isActive\": true\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Refresh the JWT access token using the httpOnly refresh token cookie set at login. No request body needed — the refresh token is sent automatically via cookie.\n\n**Example Response:**\n```json\n{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Invalidate the current session. Clears the httpOnly refresh token cookie server-side.\n\n**Example Response:**\n```json\n{\n  \"message\": \"Logged out successfully\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@snaptik.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "forgot-password"]
+            },
+            "description": "Send a password reset email to the specified address. Always returns 200 (does not reveal whether the email exists).\n\n**Example Response:**\n```json\n{\n  \"message\": \"If that email exists, a reset link has been sent.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email-link\",\n  \"password\": \"NewSecure@5678!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "reset-password"]
+            },
+            "description": "Complete the password reset flow using the token received via email.\n\n**Example Response:**\n```json\n{\n  \"message\": \"Password reset successfully.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Register via Invite",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invite-token-from-email-link\",\n  \"name\": \"New Moderator\",\n  \"password\": \"Invite@9012!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register-invite",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register-invite"]
+            },
+            "description": "Complete admin registration using an invitation token sent via POST /admins/invite. Sets the account password and activates the account.\n\n**Example Response:**\n```json\n{\n  \"message\": \"Account activated successfully.\",\n  \"user\": {\n    \"id\": \"admin-009\",\n    \"name\": \"New Moderator\",\n    \"email\": \"newmod@snaptik.com\",\n    \"role\": \"moderator\"\n  }\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "High-level platform health: aggregate stats and active system alerts.",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboard/stats",
+              "host": ["{{base_url}}"],
+              "path": ["dashboard", "stats"]
+            },
+            "description": "Returns aggregate platform statistics: total users, DAU, videos uploaded, flagged content count, open tickets, and revenue metrics.\n\n**Example Response:**\n```json\n{\n  \"users\": {\n    \"total\": 1240385,\n    \"activeToday\": 87432,\n    \"newThisWeek\": 12043,\n    \"banned\": 3201\n  },\n  \"content\": {\n    \"totalVideos\": 9823411,\n    \"uploadedToday\": 45120,\n    \"flaggedPending\": 342\n  },\n  \"tickets\": {\n    \"open\": 87,\n    \"urgent\": 12\n  },\n  \"revenue\": {\n    \"mrr\": 128450.00,\n    \"todayRevenue\": 4230.50\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard Alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboard/alerts",
+              "host": ["{{base_url}}"],
+              "path": ["dashboard", "alerts"]
+            },
+            "description": "Returns active system alerts requiring admin attention (e.g. high error rates, flagged content spikes, infrastructure warnings).\n\n**Example Response:**\n```json\n{\n  \"alerts\": [\n    {\n      \"id\": \"alert-001\",\n      \"type\": \"content_spike\",\n      \"severity\": \"high\",\n      \"message\": \"Flagged content submissions up 340% in the last hour.\",\n      \"createdAt\": \"2026-03-15T10:22:00Z\"\n    },\n    {\n      \"id\": \"alert-002\",\n      \"type\": \"infrastructure\",\n      \"severity\": \"warning\",\n      \"message\": \"CDN origin latency elevated: p99 > 2s.\",\n      \"createdAt\": \"2026-03-15T09:55:00Z\"\n    }\n  ]\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "User management: list, search, view, moderate individual users, and bulk-action multiple users.",
+      "item": [
+        {
+          "name": "List Users (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Returns a paginated list of all platform users. Supports query params: `page`, `limit`, `search`, `status` (active|banned|suspended), `sort` (createdAt|followers|reports).\n\n**Example Response:**\n```json\n{\n  \"users\": [\n    {\n      \"id\": \"usr-001\",\n      \"username\": \"johndoe\",\n      \"email\": \"john@example.com\",\n      \"displayName\": \"John Doe\",\n      \"status\": \"active\",\n      \"followers\": 12400,\n      \"reportCount\": 0,\n      \"createdAt\": \"2025-11-01T08:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 1240385,\n    \"pages\": 62020\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?search=john&status=active",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "john"
+                },
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Search users by username, display name, or email. Combine with `status` filter to narrow results.\n\n**Example Response:**\n```json\n{\n  \"users\": [\n    {\n      \"id\": \"usr-001\",\n      \"username\": \"johndoe\",\n      \"email\": \"john@example.com\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"usr-088\",\n      \"username\": \"john_creator\",\n      \"email\": \"johncreator@example.com\",\n      \"status\": \"active\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 20, \"total\": 2, \"pages\": 1 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/usr-001",
+              "host": ["{{base_url}}"],
+              "path": ["users", "usr-001"]
+            },
+            "description": "Retrieve full profile details for a single user including account status, moderation history, content counts, and device info.\n\n**Example Response:**\n```json\n{\n  \"id\": \"usr-001\",\n  \"username\": \"johndoe\",\n  \"email\": \"john@example.com\",\n  \"displayName\": \"John Doe\",\n  \"bio\": \"Just a creator.\",\n  \"status\": \"active\",\n  \"isVerified\": false,\n  \"followers\": 12400,\n  \"following\": 340,\n  \"videoCount\": 87,\n  \"reportCount\": 0,\n  \"warnCount\": 0,\n  \"createdAt\": \"2025-11-01T08:30:00Z\",\n  \"lastActiveAt\": \"2026-03-14T19:45:00Z\",\n  \"device\": \"iOS 17.2 / iPhone 14 Pro\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Ban User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ban\",\n  \"reason\": \"Repeated spam and harassment violations.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/usr-001",
+              "host": ["{{base_url}}"],
+              "path": ["users", "usr-001"]
+            },
+            "description": "Ban a user account. The `reason` field is required for `ban` and `warn` actions and is logged in the audit trail.\n\n**Example Response:**\n```json\n{\n  \"id\": \"usr-001\",\n  \"status\": \"banned\",\n  \"message\": \"User banned successfully.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Unban User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"unban\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/usr-001",
+              "host": ["{{base_url}}"],
+              "path": ["users", "usr-001"]
+            },
+            "description": "Lift a ban from a previously banned user account, restoring normal access.\n\n**Example Response:**\n```json\n{\n  \"id\": \"usr-001\",\n  \"status\": \"active\",\n  \"message\": \"User unbanned successfully.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Warn User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"warn\",\n  \"reason\": \"First warning: inappropriate content in comment section.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/usr-001",
+              "host": ["{{base_url}}"],
+              "path": ["users", "usr-001"]
+            },
+            "description": "Issue a formal warning to a user. Increments their `warnCount`. After a threshold (e.g. 3 warnings), auto-ban may be triggered depending on platform settings.\n\n**Example Response:**\n```json\n{\n  \"id\": \"usr-001\",\n  \"warnCount\": 1,\n  \"message\": \"User warned successfully.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"verify\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/usr-001",
+              "host": ["{{base_url}}"],
+              "path": ["users", "usr-001"]
+            },
+            "description": "Grant the verified badge to a user (sets `isVerified: true`). Restricted to super_admin and moderator roles.\n\n**Example Response:**\n```json\n{\n  \"id\": \"usr-001\",\n  \"isVerified\": true,\n  \"message\": \"User verified successfully.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User (GDPR)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"GDPR erasure request submitted by user on 2026-03-10.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/usr-001",
+              "host": ["{{base_url}}"],
+              "path": ["users", "usr-001"]
+            },
+            "description": "Permanently delete a user account and anonymize their data per GDPR/CCPA requirements. This action is irreversible. Restricted to super_admin role.\n\n**Example Response:**\n```json\n{\n  \"message\": \"User usr-001 deleted and data anonymized.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Action Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\"usr-001\", \"usr-002\", \"usr-003\"],\n  \"action\": \"ban\",\n  \"reason\": \"Coordinated spam ring — multiple accounts operated by same actor.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["users", "bulk-action"]
+            },
+            "description": "Apply a moderation action to multiple users simultaneously. Supported actions: `ban`, `unban`, `warn`, `verify`, `delete`. All actions are logged individually in the audit trail.\n\n**Example Response:**\n```json\n{\n  \"processed\": 3,\n  \"failed\": 0,\n  \"message\": \"Bulk action 'ban' applied to 3 users.\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Content",
+      "description": "Content moderation: review AI-flagged videos, retrieve signed playback URLs, approve/reject/delete content, and bulk-moderate.",
+      "item": [
+        {
+          "name": "Get Flagged Content",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/content/flagged",
+              "host": ["{{base_url}}"],
+              "path": ["content", "flagged"]
+            },
+            "description": "Returns a paginated list of AI-flagged content awaiting human review. Includes confidence scores, flag categories (nsfw, violence, spam, hate, csam), and uploader info.\n\n**Example Response:**\n```json\n{\n  \"items\": [\n    {\n      \"id\": \"vid-001\",\n      \"uploaderId\": \"usr-042\",\n      \"uploaderUsername\": \"badactor99\",\n      \"thumbnailUrl\": \"https://cdn.snaptik.app/thumb/vid-001.jpg\",\n      \"flagCategory\": \"nsfw\",\n      \"confidence\": 0.94,\n      \"status\": \"pending\",\n      \"flaggedAt\": \"2026-03-15T08:12:00Z\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 20, \"total\": 342, \"pages\": 18 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Flagged Content (Filtered)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/content/flagged?status=pending&minConfidence=0.85",
+              "host": ["{{base_url}}"],
+              "path": ["content", "flagged"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "minConfidence",
+                  "value": "0.85"
+                }
+              ]
+            },
+            "description": "Filter flagged content by `status` (pending|approved|rejected|deleted) and/or `minConfidence` (0.0–1.0). Useful for prioritizing high-confidence violations.\n\n**Example Response:**\n```json\n{\n  \"items\": [\n    {\n      \"id\": \"vid-007\",\n      \"flagCategory\": \"violence\",\n      \"confidence\": 0.97,\n      \"status\": \"pending\",\n      \"flaggedAt\": \"2026-03-15T09:00:00Z\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 20, \"total\": 89, \"pages\": 5 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Content Signed URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/content/vid-001/signed-url",
+              "host": ["{{base_url}}"],
+              "path": ["content", "vid-001", "signed-url"]
+            },
+            "description": "Generate a short-lived CloudFront signed URL to review private or restricted content in the browser. URL expires after 15 minutes.\n\n**Example Response:**\n```json\n{\n  \"signedUrl\": \"https://cdn.snaptik.app/videos/vid-001.m3u8?Policy=...&Signature=...&Key-Pair-Id=APKA...\",\n  \"expiresAt\": \"2026-03-15T10:37:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Moderate Content — Reject",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"reason\": \"NSFW content violates Community Guidelines section 4.2.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/vid-001/moderate",
+              "host": ["{{base_url}}"],
+              "path": ["content", "vid-001", "moderate"]
+            },
+            "description": "Reject a flagged video. The video is hidden from the public feed but the file is retained. The uploader receives an in-app notification with the reason.\n\n**Example Response:**\n```json\n{\n  \"id\": \"vid-001\",\n  \"status\": \"rejected\",\n  \"message\": \"Content rejected and removed from feed.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Moderate Content — Approve",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/vid-001/moderate",
+              "host": ["{{base_url}}"],
+              "path": ["content", "vid-001", "moderate"]
+            },
+            "description": "Approve a flagged video as safe — clears the flag and restores visibility on the public feed.\n\n**Example Response:**\n```json\n{\n  \"id\": \"vid-001\",\n  \"status\": \"approved\",\n  \"message\": \"Content approved and restored to feed.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Moderate Content — Delete",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"delete\",\n  \"reason\": \"CSAM — zero-tolerance policy. Uploader account escalated to trust & safety.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/vid-001/moderate",
+              "host": ["{{base_url}}"],
+              "path": ["content", "vid-001", "moderate"]
+            },
+            "description": "Permanently delete content from storage. Used for zero-tolerance violations (CSAM, NCII). Action is irreversible and triggers automatic user account suspension pending review. Restricted to super_admin and moderator roles.\n\n**Example Response:**\n```json\n{\n  \"id\": \"vid-001\",\n  \"status\": \"deleted\",\n  \"message\": \"Content permanently deleted.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Moderate Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\"vid-001\", \"vid-002\", \"vid-003\"],\n  \"action\": \"reject\",\n  \"reason\": \"Mass NSFW upload event — auto-flagged batch from user cluster.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/bulk-moderate",
+              "host": ["{{base_url}}"],
+              "path": ["content", "bulk-moderate"]
+            },
+            "description": "Apply a moderation action to multiple content items at once. Supported actions: `approve`, `reject`, `delete`. All actions are individually audit-logged.\n\n**Example Response:**\n```json\n{\n  \"processed\": 3,\n  \"failed\": 0,\n  \"message\": \"Bulk action 'reject' applied to 3 items.\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "description": "User-submitted reports: list, view, assign to moderators, and resolve.",
+      "item": [
+        {
+          "name": "List Reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports",
+              "host": ["{{base_url}}"],
+              "path": ["reports"]
+            },
+            "description": "Returns a paginated list of all user-submitted reports. Supports query params: `status` (pending|resolved|dismissed), `type` (video|user|comment), `assignedTo`.\n\n**Example Response:**\n```json\n{\n  \"reports\": [\n    {\n      \"id\": \"rep-001\",\n      \"type\": \"video\",\n      \"targetId\": \"vid-042\",\n      \"reportedBy\": \"usr-100\",\n      \"reason\": \"harassment\",\n      \"description\": \"This video targets me personally with threats.\",\n      \"status\": \"pending\",\n      \"assignedTo\": null,\n      \"createdAt\": \"2026-03-14T15:30:00Z\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 20, \"total\": 1043, \"pages\": 53 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "List Reports (Pending)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports?status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["reports"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Filter reports by status. Use `status=pending` to show only unresolved reports requiring action.\n\n**Example Response:**\n```json\n{\n  \"reports\": [\n    {\n      \"id\": \"rep-001\",\n      \"status\": \"pending\",\n      \"reason\": \"harassment\",\n      \"createdAt\": \"2026-03-14T15:30:00Z\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 20, \"total\": 231, \"pages\": 12 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Report by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/rep-001",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "rep-001"]
+            },
+            "description": "Retrieve full details of a specific report including reporter info, target content, resolution history, and moderator notes.\n\n**Example Response:**\n```json\n{\n  \"id\": \"rep-001\",\n  \"type\": \"video\",\n  \"targetId\": \"vid-042\",\n  \"reportedBy\": { \"id\": \"usr-100\", \"username\": \"concerned_user\" },\n  \"reason\": \"harassment\",\n  \"description\": \"This video targets me personally with threats.\",\n  \"status\": \"pending\",\n  \"assignedTo\": null,\n  \"notes\": \"\",\n  \"createdAt\": \"2026-03-14T15:30:00Z\",\n  \"resolvedAt\": null\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Report",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"warn\",\n  \"notes\": \"Reviewed video — language is aggressive but does not meet threshold for removal. User warned per policy 3.1.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reports/rep-001/resolve",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "rep-001", "resolve"]
+            },
+            "description": "Resolve a report with an action. Supported actions: `warn` (issue warning to offending user), `ban` (ban offending user), `remove_content` (remove the reported item), `dismiss` (no violation found).\n\n**Example Response:**\n```json\n{\n  \"id\": \"rep-001\",\n  \"status\": \"resolved\",\n  \"action\": \"warn\",\n  \"resolvedAt\": \"2026-03-15T11:05:00Z\",\n  \"resolvedBy\": \"admin-001\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Report",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adminId\": \"admin-003\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reports/rep-001/assign",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "rep-001", "assign"]
+            },
+            "description": "Assign a report to a specific moderator. The assignee will see the report in their queue. Use the GET /admins endpoint to find valid admin IDs.\n\n**Example Response:**\n```json\n{\n  \"id\": \"rep-001\",\n  \"assignedTo\": \"admin-003\",\n  \"message\": \"Report assigned successfully.\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "description": "Support ticket management: list tickets, reply to users, update status and priority.",
+      "item": [
+        {
+          "name": "List Tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tickets",
+              "host": ["{{base_url}}"],
+              "path": ["tickets"]
+            },
+            "description": "Returns a paginated list of all support tickets. Supports filtering by `status` (open|in_progress|waiting|resolved|closed) and `priority` (low|normal|high|urgent).\n\n**Example Response:**\n```json\n{\n  \"tickets\": [\n    {\n      \"id\": \"tkt-001\",\n      \"subject\": \"My account was wrongfully banned\",\n      \"userId\": \"usr-042\",\n      \"userEmail\": \"user@example.com\",\n      \"status\": \"open\",\n      \"priority\": \"high\",\n      \"category\": \"account\",\n      \"createdAt\": \"2026-03-13T11:00:00Z\",\n      \"lastReplyAt\": null\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 20, \"total\": 87, \"pages\": 5 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "List Tickets (Urgent Open)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tickets?status=open&priority=urgent",
+              "host": ["{{base_url}}"],
+              "path": ["tickets"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "open"
+                },
+                {
+                  "key": "priority",
+                  "value": "urgent"
+                }
+              ]
+            },
+            "description": "Filter for open urgent tickets requiring immediate attention.\n\n**Example Response:**\n```json\n{\n  \"tickets\": [\n    {\n      \"id\": \"tkt-009\",\n      \"subject\": \"CSAM reported via ticket\",\n      \"status\": \"open\",\n      \"priority\": \"urgent\",\n      \"createdAt\": \"2026-03-15T07:20:00Z\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 20, \"total\": 12, \"pages\": 1 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Ticket by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tickets/tkt-001",
+              "host": ["{{base_url}}"],
+              "path": ["tickets", "tkt-001"]
+            },
+            "description": "Retrieve the full ticket thread including all admin and user replies, metadata, and history.\n\n**Example Response:**\n```json\n{\n  \"id\": \"tkt-001\",\n  \"subject\": \"My account was wrongfully banned\",\n  \"userId\": \"usr-042\",\n  \"status\": \"open\",\n  \"priority\": \"high\",\n  \"replies\": [\n    {\n      \"id\": \"reply-001\",\n      \"author\": \"usr-042\",\n      \"text\": \"I never violated any rules. Please review.\",\n      \"createdAt\": \"2026-03-13T11:00:00Z\"\n    }\n  ],\n  \"createdAt\": \"2026-03-13T11:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Reply to Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Thank you for reaching out. We've reviewed your account and found it was banned in error. It has now been restored. We apologize for the inconvenience.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tickets/tkt-001/reply",
+              "host": ["{{base_url}}"],
+              "path": ["tickets", "tkt-001", "reply"]
+            },
+            "description": "Send a reply to the ticket thread. The message is visible to the user in their support inbox. The replying admin's identity is recorded.\n\n**Example Response:**\n```json\n{\n  \"id\": \"reply-002\",\n  \"ticketId\": \"tkt-001\",\n  \"author\": \"admin-001\",\n  \"text\": \"Thank you for reaching out...\",\n  \"createdAt\": \"2026-03-15T11:30:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Ticket",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\",\n  \"priority\": \"high\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tickets/tkt-001",
+              "host": ["{{base_url}}"],
+              "path": ["tickets", "tkt-001"]
+            },
+            "description": "Update a ticket's status and/or priority. Valid statuses: `open`, `in_progress`, `waiting`, `resolved`, `closed`. Valid priorities: `low`, `normal`, `high`, `urgent`.\n\n**Example Response:**\n```json\n{\n  \"id\": \"tkt-001\",\n  \"status\": \"in_progress\",\n  \"priority\": \"high\",\n  \"message\": \"Ticket updated successfully.\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "description": "Platform analytics: overview metrics, user growth trends, content performance, and data exports.",
+      "item": [
+        {
+          "name": "Get Analytics Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/overview",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "overview"]
+            },
+            "description": "Returns top-level KPIs: DAU/MAU, session duration, retention rates, revenue, and growth vs. prior period.\n\n**Example Response:**\n```json\n{\n  \"period\": \"last_30_days\",\n  \"dau\": 87432,\n  \"mau\": 1240385,\n  \"dauMauRatio\": 0.071,\n  \"avgSessionMinutes\": 28.4,\n  \"d1Retention\": 0.42,\n  \"d7Retention\": 0.21,\n  \"d30Retention\": 0.09,\n  \"mrr\": 128450.00,\n  \"growth\": {\n    \"users\": \"+8.3%\",\n    \"revenue\": \"+12.1%\"\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/users?days=30",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "users"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Returns user growth time-series data for the specified period. Includes daily new signups, churn, and net growth. Query param `days` supports: 7, 14, 30, 90, 365.\n\n**Example Response:**\n```json\n{\n  \"days\": 30,\n  \"series\": [\n    { \"date\": \"2026-02-14\", \"newUsers\": 3421, \"churned\": 234, \"net\": 3187 },\n    { \"date\": \"2026-02-15\", \"newUsers\": 3890, \"churned\": 201, \"net\": 3689 }\n  ],\n  \"totals\": {\n    \"newUsers\": 98450,\n    \"churned\": 6830,\n    \"net\": 91620\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Content Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/content",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "content"]
+            },
+            "description": "Returns content engagement metrics: daily uploads, views, likes, shares, comments, average watch time, and top-performing content categories.\n\n**Example Response:**\n```json\n{\n  \"uploads\": { \"today\": 45120, \"thisWeek\": 312340 },\n  \"engagement\": {\n    \"avgWatchTime\": 22.8,\n    \"likeRate\": 0.078,\n    \"shareRate\": 0.021\n  },\n  \"topCategories\": [\n    { \"name\": \"Dance\", \"viewShare\": 0.31 },\n    { \"name\": \"Comedy\", \"viewShare\": 0.24 },\n    { \"name\": \"DIY\", \"viewShare\": 0.11 }\n  ]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Analytics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"users\",\n  \"days\": 30\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/analytics/export",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "export"]
+            },
+            "description": "Trigger an async analytics export. The server generates a CSV/JSON report and returns a download URL (or sends via email). Supported types: `users`, `content`, `revenue`, `moderation`. Restricted to roles: super_admin, analyst.\n\n**Example Response:**\n```json\n{\n  \"exportId\": \"exp-2026031501\",\n  \"type\": \"users\",\n  \"status\": \"queued\",\n  \"downloadUrl\": null,\n  \"message\": \"Export queued. You'll receive an email when it's ready.\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "description": "Immutable audit log of all admin actions. Filterable by action type, date range, and actor.",
+      "item": [
+        {
+          "name": "Get Audit Log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/audit",
+              "host": ["{{base_url}}"],
+              "path": ["audit"]
+            },
+            "description": "Returns a paginated, chronological list of all admin actions. Each entry records: who performed the action, what action, on which target, from which IP, and at what time.\n\n**Example Response:**\n```json\n{\n  \"entries\": [\n    {\n      \"id\": \"aud-001\",\n      \"adminId\": \"admin-001\",\n      \"adminEmail\": \"admin@snaptik.com\",\n      \"action\": \"user.ban\",\n      \"targetType\": \"user\",\n      \"targetId\": \"usr-042\",\n      \"metadata\": { \"reason\": \"Spam\" },\n      \"ip\": \"192.168.1.10\",\n      \"createdAt\": \"2026-03-15T10:45:00Z\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 50, \"total\": 24890, \"pages\": 498 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Audit Log (Filtered)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/audit?action=user.ban&from=2026-03-01&to=2026-03-15",
+              "host": ["{{base_url}}"],
+              "path": ["audit"],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "user.ban"
+                },
+                {
+                  "key": "from",
+                  "value": "2026-03-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-03-15"
+                }
+              ]
+            },
+            "description": "Filter audit log by `action` (e.g. user.ban, user.warn, content.delete, settings.update), `from` and `to` date (ISO 8601), and optionally `adminId`.\n\n**Example Response:**\n```json\n{\n  \"entries\": [\n    {\n      \"id\": \"aud-201\",\n      \"action\": \"user.ban\",\n      \"targetId\": \"usr-099\",\n      \"metadata\": { \"reason\": \"CSAM\" },\n      \"createdAt\": \"2026-03-10T14:20:00Z\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"limit\": 50, \"total\": 18, \"pages\": 1 }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Audit Log",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"2026-03-01\",\n  \"to\": \"2026-03-15\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/audit/export",
+              "host": ["{{base_url}}"],
+              "path": ["audit", "export"]
+            },
+            "description": "Export audit log entries for a date range as a CSV file. Returns a signed download URL valid for 1 hour. Restricted to super_admin and auditor roles.\n\n**Example Response:**\n```json\n{\n  \"exportId\": \"auditexp-20260315\",\n  \"downloadUrl\": \"https://s3.amazonaws.com/snaptik-exports/audit-2026-03-01-to-2026-03-15.csv?X-Amz-Signature=...\",\n  \"expiresAt\": \"2026-03-15T12:30:00Z\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "description": "Platform configuration: read all settings, and update individual settings by key.",
+      "item": [
+        {
+          "name": "Get All Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/settings",
+              "host": ["{{base_url}}"],
+              "path": ["settings"]
+            },
+            "description": "Returns the full platform settings object, organized by category: moderation thresholds, feature flags, content limits, notification settings.\n\n**Example Response:**\n```json\n{\n  \"moderation\": {\n    \"nsfw_threshold\": 0.85,\n    \"violence_threshold\": 0.80,\n    \"spam_threshold\": 0.75,\n    \"auto_ban_warn_count\": 3\n  },\n  \"features\": {\n    \"live_streams\": true,\n    \"duets\": true,\n    \"stories\": true,\n    \"gifts\": false\n  },\n  \"content\": {\n    \"max_video_duration_seconds\": 180,\n    \"max_video_size_mb\": 500\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Setting — NSFW Threshold",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": 0.90\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/settings/moderation.nsfw_threshold",
+              "host": ["{{base_url}}"],
+              "path": ["settings", "moderation.nsfw_threshold"]
+            },
+            "description": "Update an individual setting by its dot-notation key. Here: raise the NSFW auto-flag confidence threshold from 0.85 to 0.90 (fewer false positives, more manual review needed).\n\nRestricted to super_admin role. All settings changes are recorded in the audit log.\n\n**Example Response:**\n```json\n{\n  \"key\": \"moderation.nsfw_threshold\",\n  \"value\": 0.90,\n  \"updatedAt\": \"2026-03-15T11:00:00Z\",\n  \"updatedBy\": \"admin-001\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Setting — Disable Live Streams",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/settings/features.live_streams",
+              "host": ["{{base_url}}"],
+              "path": ["settings", "features.live_streams"]
+            },
+            "description": "Toggle a feature flag. Here: disable the live streaming feature platform-wide (e.g. during an incident or maintenance window).\n\nRestricted to super_admin role.\n\n**Example Response:**\n```json\n{\n  \"key\": \"features.live_streams\",\n  \"value\": false,\n  \"updatedAt\": \"2026-03-15T11:05:00Z\",\n  \"updatedBy\": \"admin-001\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admins",
+      "description": "Admin user management: list admins, check who is online, invite new admins, update roles and active status.",
+      "item": [
+        {
+          "name": "List Admins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admins",
+              "host": ["{{base_url}}"],
+              "path": ["admins"]
+            },
+            "description": "Returns all admin accounts with their roles, active status, and last login time.\n\n**Example Response:**\n```json\n{\n  \"admins\": [\n    {\n      \"id\": \"admin-001\",\n      \"name\": \"Super Admin\",\n      \"email\": \"admin@snaptik.com\",\n      \"role\": \"super_admin\",\n      \"isActive\": true,\n      \"lastLoginAt\": \"2026-03-15T08:00:00Z\",\n      \"createdAt\": \"2025-10-01T00:00:00Z\"\n    },\n    {\n      \"id\": \"admin-002\",\n      \"name\": \"Moderator\",\n      \"email\": \"moderator@snaptik.com\",\n      \"role\": \"moderator\",\n      \"isActive\": true,\n      \"lastLoginAt\": \"2026-03-15T09:30:00Z\",\n      \"createdAt\": \"2025-10-15T00:00:00Z\"\n    }\n  ]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Online Admins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admins/online",
+              "host": ["{{base_url}}"],
+              "path": ["admins", "online"]
+            },
+            "description": "Returns admins who are currently online (active session in the last 5 minutes). Useful for knowing who is available for ticket escalation.\n\n**Example Response:**\n```json\n{\n  \"online\": [\n    {\n      \"id\": \"admin-001\",\n      \"name\": \"Super Admin\",\n      \"role\": \"super_admin\",\n      \"lastSeenAt\": \"2026-03-15T11:58:00Z\"\n    },\n    {\n      \"id\": \"admin-003\",\n      \"name\": \"Support Agent\",\n      \"role\": \"support\",\n      \"lastSeenAt\": \"2026-03-15T11:57:30Z\"\n    }\n  ],\n  \"count\": 2\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Invite Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newmod@snaptik.com\",\n  \"name\": \"New Moderator\",\n  \"role\": \"moderator\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admins/invite",
+              "host": ["{{base_url}}"],
+              "path": ["admins", "invite"]
+            },
+            "description": "Send an invitation email to a new admin. The invitee uses the link in the email with POST /auth/register-invite to set their password and activate the account.\n\nValid roles: `super_admin`, `moderator`, `support`, `analyst`, `auditor`. Only super_admin can invite other super_admins.\n\n**Example Response:**\n```json\n{\n  \"message\": \"Invitation sent to newmod@snaptik.com.\",\n  \"inviteId\": \"inv-001\",\n  \"expiresAt\": \"2026-03-22T11:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Admin",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admins/admin-005",
+              "host": ["{{base_url}}"],
+              "path": ["admins", "admin-005"]
+            },
+            "description": "Deactivate an admin account (e.g. when an employee leaves). This revokes all active sessions. Restricted to super_admin. Cannot deactivate your own account.\n\n**Example Response:**\n```json\n{\n  \"id\": \"admin-005\",\n  \"isActive\": false,\n  \"message\": \"Admin account deactivated. All sessions invalidated.\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Admin Role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"support\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admins/admin-005",
+              "host": ["{{base_url}}"],
+              "path": ["admins", "admin-005"]
+            },
+            "description": "Change the role of an existing admin. Role change takes effect on next login (or immediately if their current JWT is invalidated). Restricted to super_admin.\n\n**Example Response:**\n```json\n{\n  \"id\": \"admin-005\",\n  \"role\": \"support\",\n  \"message\": \"Role updated successfully.\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "description": "Service health check — no authentication required.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5001/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5001",
+              "path": ["health"]
+            },
+            "description": "Check that the API server is up and connected to its dependencies (MongoDB, Redis). No authentication required. Use this for uptime monitoring or load balancer health probes.\n\n**Example Response (healthy):**\n```json\n{\n  \"status\": \"ok\",\n  \"uptime\": 3600,\n  \"timestamp\": \"2026-03-15T11:00:00Z\",\n  \"services\": {\n    \"mongodb\": \"connected\",\n    \"redis\": \"connected\"\n  },\n  \"version\": \"1.0.0\"\n}\n```\n\n**Example Response (degraded):**\n```json\n{\n  \"status\": \"degraded\",\n  \"services\": {\n    \"mongodb\": \"connected\",\n    \"redis\": \"disconnected\"\n  }\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

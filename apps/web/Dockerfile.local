@@ -1,0 +1,26 @@
+FROM node:20-alpine
+
+RUN corepack enable && corepack prepare pnpm@9 --activate
+
+WORKDIR /app
+
+# Copy workspace manifests for layer caching
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json tsconfig.base.json ./
+COPY packages/types/package.json  ./packages/types/
+COPY packages/ui/package.json     ./packages/ui/
+COPY apps/web/package.json        ./apps/web/
+
+RUN echo "node-linker=hoisted" > .npmrc && pnpm install --frozen-lockfile
+
+# Copy all source
+COPY packages/types/ ./packages/types/
+COPY packages/ui/    ./packages/ui/
+COPY apps/web/       ./apps/web/
+
+WORKDIR /app/apps/web
+
+EXPOSE 3000
+
+ENV NODE_ENV=development
+
+CMD ["pnpm", "dev"]

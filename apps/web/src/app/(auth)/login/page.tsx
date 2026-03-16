@@ -44,10 +44,10 @@ function LoginForm() {
       router.push(from && from.startsWith('/') && !from.startsWith('//') ? from : '/dashboard');
     } catch (err: unknown) {
       const axiosError = err as {
-        response?: { data?: { message?: string } };
+        response?: { data?: { error?: string; message?: string } };
       };
       setServerError(
-        axiosError?.response?.data?.message ?? 'Invalid email or password. Please try again.',
+        axiosError?.response?.data?.error ?? axiosError?.response?.data?.message ?? 'Invalid email or password. Please try again.',
       );
     }
   };

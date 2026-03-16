@@ -52,7 +52,7 @@ function UsersPageContent() {
           <div className="hidden items-center gap-4 sm:flex">
             <div className="flex items-center gap-1.5 text-xs text-muted">
               <Users className="h-3.5 w-3.5" />
-              <span>{data.total.toLocaleString()} total</span>
+              <span>{data.users.length.toLocaleString()} total</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-danger">
               <UserX className="h-3.5 w-3.5" />

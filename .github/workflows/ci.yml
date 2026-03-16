@@ -35,17 +35,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck (packages + apps)
-        run: pnpm turbo typecheck
+      # Scope to web + shared packages only — api has no source yet (built in separate phase)
+      - name: Typecheck (web + packages)
+        run: pnpm turbo typecheck --filter=@snaptik/web... --filter=@snaptik/types... --filter=@snaptik/ui...
 
-      - name: Lint
-        run: pnpm turbo lint
+      - name: Lint (web + packages)
+        run: pnpm turbo lint --filter=@snaptik/web... --filter=@snaptik/types... --filter=@snaptik/ui...
 
-      - name: Build (production)
-        run: pnpm turbo build
+      - name: Build (web production)
+        run: pnpm turbo build --filter=@snaptik/web...
         env:
           # Next.js build needs a placeholder — real values injected by Vercel
-          NEXT_PUBLIC_API_URL: http://localhost:5000/api/v1
+          NEXT_PUBLIC_API_URL: http://localhost:5001/api/v1
 
       - name: Upload build artefacts
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -1,0 +1,46 @@
+version: '3.8'
+
+# SnapTik Admin API — Production docker-compose
+# Runs on the admin EC2 instance (16.16.251.27)
+# Start: docker compose -f docker-compose.production.yml up -d
+# Logs:  docker compose -f docker-compose.production.yml logs -f
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: snaptik-admin-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: snaptik_admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: snaptik_admin
+    volumes:
+      - mongo_data:/data/db
+    # NOT exposed to the internet — only reachable within Docker network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  api:
+    image: snaptik-admin-api:latest
+    container_name: snaptik-admin-api
+    restart: unless-stopped
+    ports:
+      - "5001:5001"   # Nginx on port 80 proxies to this
+    env_file:
+      - /home/ubuntu/snaptik-admin.env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  mongo_data:

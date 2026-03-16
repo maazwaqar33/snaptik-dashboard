@@ -1,0 +1,64 @@
+version: '3.9'
+
+# One-command local stack: MongoDB + Admin API + Next.js web
+# Usage: docker compose -f docker-compose.local.yml up --build
+# Then seed: docker compose -f docker-compose.local.yml exec api pnpm seed
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: snaptik_mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: snaptik
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: snaptik_admin_api
+    ports:
+      - '5001:5001'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV:           development
+      PORT:               5001
+      MONGODB_URI:        mongodb://mongo:27017/snaptik
+      JWT_ACCESS_SECRET:  dev-access-secret-min-32-chars-xx
+      JWT_REFRESH_SECRET: dev-refresh-secret-min-32-chars-xx
+      JWT_ACCESS_EXPIRES: 15m
+      JWT_REFRESH_EXPIRES: 7d
+      COOKIE_SECURE:      'false'
+      COOKIE_SAME_SITE:   lax
+      CORS_ORIGIN:        http://localhost:3000
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:5001/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.local
+    container_name: snaptik_admin_web
+    ports:
+      - '3000:3000'
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:5001/api/v1
+
+volumes:
+  mongo_data:

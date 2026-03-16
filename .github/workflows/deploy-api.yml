@@ -1,15 +1,17 @@
 name: Deploy API (EC2)
 
-# API deployments are gated behind a release tag (e.g. v1.2.3) rather than
-# every main push — API changes affect the running database and live users.
+# Deploys admin API to EC2 (16.16.251.27) on push to main that touches API files,
+# or on any release tag (v*.*.*).
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
     paths:
       - 'apps/api/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
+  push:
+    tags:
+      - 'v*.*.*'
 
 concurrency:
   group: deploy-api
@@ -72,39 +74,31 @@ jobs:
       - name: Copy image to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
-          host:     ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key:      ${{ secrets.EC2_SSH_KEY }}
+          host:     ${{ secrets.ADMIN_EC2_HOST }}
+          username: ${{ secrets.ADMIN_EC2_USER }}
+          key:      ${{ secrets.ADMIN_EC2_SSH_KEY }}
           source:   /tmp/snaptik-admin-api.tar.gz
           target:   /tmp/
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host:     ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key:      ${{ secrets.EC2_SSH_KEY }}
+          host:     ${{ secrets.ADMIN_EC2_HOST }}
+          username: ${{ secrets.ADMIN_EC2_USER }}
+          key:      ${{ secrets.ADMIN_EC2_SSH_KEY }}
           script: |
             set -e
+            cd /home/ubuntu/snaptik-admin
 
             echo "=== Loading Docker image ==="
             docker load < /tmp/snaptik-admin-api.tar.gz
 
-            echo "=== Stopping old container ==="
-            docker stop snaptik-admin-api 2>/dev/null || true
-            docker rm   snaptik-admin-api 2>/dev/null || true
-
-            echo "=== Starting new container ==="
-            docker run -d \
-              --name snaptik-admin-api \
-              --restart unless-stopped \
-              -p 5001:5001 \
-              --env-file /home/${{ secrets.EC2_USER }}/snaptik-admin.env \
-              snaptik-admin-api:latest
+            echo "=== Restarting via docker compose ==="
+            docker compose -f docker-compose.production.yml up -d --no-deps api
 
             echo "=== Health check ==="
-            sleep 5
-            curl -sf http://localhost:5001/health || (docker logs snaptik-admin-api && exit 1)
+            sleep 8
+            curl -sf http://localhost:5001/health || (docker compose -f docker-compose.production.yml logs api --tail 50 && exit 1)
 
             echo "=== Cleanup ==="
             docker image prune -f
@@ -112,18 +106,14 @@ jobs:
 
             echo "=== Done: ${{ github.ref_name }} deployed ==="
 
-# Required secrets (add in repo Settings → Secrets):
-#   EC2_HOST            — EC2 public IP or hostname
-#   EC2_USER            — EC2 username (typically 'ubuntu' or 'ec2-user')
-#   EC2_SSH_KEY         — Private SSH key (PEM format, the matching .pub key must be in EC2 authorized_keys)
-#   TEST_MONGODB_URI    — MongoDB URI for CI test database (separate from production)
+# ──────────────────────────────────────────────────────────────────────────────
+# Required GitHub Secrets (repo Settings → Secrets and variables → Actions):
 #
-# On the EC2 instance, create ~/snaptik-admin.env with:
-#   NODE_ENV=production
-#   PORT=5001
-#   MONGODB_URI=...
-#   JWT_SECRET=...
-#   CLOUDFRONT_KEY_PAIR_ID=...
-#   CLOUDFRONT_PRIVATE_KEY=...
-#   AWS_REGION=...
-#   SES_FROM_EMAIL=...
+#   ADMIN_EC2_HOST     = 16.16.251.27
+#   ADMIN_EC2_USER     = ubuntu
+#   ADMIN_EC2_SSH_KEY  = (paste full contents of snaptik-prod-ssh-key2.pem)
+#   TEST_MONGODB_URI   = mongodb://snaptik_admin:<pw>@localhost:27017/snaptik_admin_test?authSource=admin
+#
+# The production env is stored in /home/ubuntu/snaptik-admin.env on the EC2.
+# See scripts/ec2-env-template.sh for the exact values to set.
+# ──────────────────────────────────────────────────────────────────────────────

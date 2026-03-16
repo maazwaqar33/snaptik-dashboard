@@ -18,12 +18,15 @@ RUN pnpm install --frozen-lockfile
 COPY packages/types/ ./packages/types/
 COPY apps/api/       ./apps/api/
 
-# Build shared types then API
-RUN pnpm --filter @snaptik/types run build
-RUN pnpm --filter @snaptik/api   run build
+# Build types first, then API — pnpm exec resolves tsc through the virtual store
+WORKDIR /app/packages/types
+RUN pnpm exec tsc
+WORKDIR /app/apps/api
+RUN pnpm exec tsc
+WORKDIR /app
 
 # Prune dev dependencies
-RUN pnpm deploy --filter @snaptik/api --prod /app/deploy
+RUN pnpm deploy --filter @snaptik/api --prod --legacy /app/deploy
 
 
 # ─── Stage 2: Production image ───────────────────────────────────────────────

@@ -191,7 +191,7 @@ export function UserActionModal({
             disabled={loading || (config.needsReason && !reason.trim())}
             className={cn(
               'flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-white transition-opacity',
-              'disabled:cursor-not-allowed disabled:opacity-50',
+              'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-danger/40 disabled:text-white/60',
               config.confirmClass,
             )}
           >

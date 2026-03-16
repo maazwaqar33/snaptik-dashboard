@@ -124,7 +124,7 @@ function QueueItem({
           <span className={cn('rounded-sm border px-1 py-0.5 text-[10px] font-medium', FLAG_REASON_COLORS[item.flagReason])}>
             {FLAG_REASON_LABELS[item.flagReason]}
           </span>
-          <span className="text-[10px] text-muted">{item.reportCount} reports</span>
+          <span className="text-[10px] text-muted">{`${item.reportCount} ${item.reportCount === 1 ? 'report' : 'reports'}`}</span>
         </div>
         <p className="mt-0.5 text-[10px] text-muted">
           {formatDistanceToNow(new Date(item.flaggedAt), { addSuffix: true })}
