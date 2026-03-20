@@ -5,6 +5,8 @@ import { ShieldAlert } from 'lucide-react';
 import { ModerationQueue } from '@/components/content/moderation-queue';
 import { useAbility } from '@/hooks/use-ability';
 import { apiClient } from '@/lib/api';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import type { FlaggedVideo } from '@/types/moderation';
 
 async function fetchQueue(): Promise<FlaggedVideo[]> {
@@ -17,12 +19,11 @@ export default function ContentModerationPage() {
 
   if (!ability.can('read', 'content')) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-        <ShieldAlert className="h-10 w-10 text-muted/40" />
-        <p className="text-sm text-muted">
-          You don&apos;t have permission to access content moderation.
-        </p>
-      </div>
+      <EmptyState
+        icon={ShieldAlert}
+        title="Access restricted"
+        description="You don't have permission to access content moderation."
+      />
     );
   }
 
@@ -53,9 +54,7 @@ function ContentPageInner() {
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-2.5 text-sm text-warning">
-          Could not reach API — showing seed data for development
-        </div>
+        <ErrorBanner message="Could not reach API — showing seed data for development" />
       )}
 
       <ModerationQueue initialItems={data ?? undefined} />

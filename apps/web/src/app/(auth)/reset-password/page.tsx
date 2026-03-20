@@ -9,6 +9,7 @@ import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, ShieldAlert } from 'lu
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const schema = z
   .object({
@@ -265,7 +266,7 @@ export default function ResetPasswordPage() {
     <Suspense
       fallback={
         <div className="flex h-48 items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted" />
+          <LoadingSpinner size="sm" />
         </div>
       }
     >

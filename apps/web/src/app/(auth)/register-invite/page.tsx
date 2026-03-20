@@ -9,6 +9,7 @@ import { Eye, EyeOff, Loader2, AlertCircle, ShieldAlert, CheckCircle2 } from 'lu
 import { useAuthStore } from '@/store/auth';
 import { apiClient } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import type { AdminUser } from '@snaptik/types';
 
 const schema = z
@@ -216,7 +217,7 @@ export default function RegisterInvitePage() {
     <Suspense
       fallback={
         <div className="flex h-48 items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted" />
+          <LoadingSpinner size="sm" />
         </div>
       }
     >

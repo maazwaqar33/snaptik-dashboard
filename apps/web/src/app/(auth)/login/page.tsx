@@ -9,6 +9,7 @@ import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/cn';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -169,7 +170,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="flex h-48 items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted" />
+          <LoadingSpinner size="sm" />
         </div>
       }
     >

@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX, Loader2, VideoOff } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface VideoPlayerProps {
   videoUrl?: string;
@@ -96,10 +97,7 @@ export function VideoPlayer({
   if (!src && !thumbnailUrl) {
     return (
       <div className={cn('flex aspect-[9/16] max-h-[480px] items-center justify-center rounded-xl bg-white/5', className)}>
-        <div className="flex flex-col items-center gap-2 text-muted">
-          <VideoOff className="h-8 w-8" />
-          <span className="text-xs">No video available</span>
-        </div>
+        <EmptyState icon={VideoOff} title="No video available" />
       </div>
     );
   }

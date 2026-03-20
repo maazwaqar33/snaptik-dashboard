@@ -5,6 +5,8 @@ import { Flag } from 'lucide-react';
 import { ReportsBoard } from '@/components/reports/reports-board';
 import { useAbility } from '@/hooks/use-ability';
 import { apiClient } from '@/lib/api';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import type { KanbanColumns } from '@/types/reports';
 
 async function fetchReports(): Promise<KanbanColumns> {
@@ -17,12 +19,11 @@ export default function ReportsPage() {
 
   if (!ability.can('read', 'reports')) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-        <Flag className="h-10 w-10 text-muted/40" />
-        <p className="text-sm text-muted">
-          You don&apos;t have permission to view reports.
-        </p>
-      </div>
+      <EmptyState
+        icon={Flag}
+        title="Access restricted"
+        description="You don't have permission to view reports."
+      />
     );
   }
 
@@ -47,9 +48,7 @@ function ReportsPageContent() {
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-2.5 text-sm text-warning">
-          Could not reach API &mdash; showing seed data for development
-        </div>
+        <ErrorBanner message="Could not reach API — showing seed data for development" />
       )}
 
       <ReportsBoard initialColumns={data ?? { pending: [], in_review: [], resolved: [] }} />

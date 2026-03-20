@@ -5,6 +5,8 @@ import { Users, UserX, ShieldCheck } from 'lucide-react';
 import { UsersTable } from '@/components/users/users-table';
 import { useAbility } from '@/hooks/use-ability';
 import { apiClient } from '@/lib/api';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import type { PaginatedUsers } from '@/types/platform';
 
 async function fetchUsers(): Promise<PaginatedUsers> {
@@ -18,10 +20,11 @@ export default function UsersPage() {
   // RBAC guard — if admin can't read users, show nothing
   if (!ability.can('read', 'users')) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-        <UserX className="h-10 w-10 text-muted/40" />
-        <p className="text-sm text-muted">You don&apos;t have permission to view user data.</p>
-      </div>
+      <EmptyState
+        icon={UserX}
+        title="Access restricted"
+        description="You don't have permission to view user data."
+      />
     );
   }
 
@@ -67,9 +70,7 @@ function UsersPageContent() {
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-2.5 text-sm text-warning">
-          Could not reach API — showing seed data for development
-        </div>
+        <ErrorBanner message="Could not reach API — showing seed data for development" />
       )}
 
       {/* Table — uses seed data when API is unavailable */}
