@@ -6,7 +6,6 @@ import { format, subDays } from 'date-fns';
 import { useAbility } from '@/hooks/use-ability';
 import { apiClient } from '@/lib/api';
 import { useApi } from '@/lib/hooks/use-api';
-import { cn } from '@/lib/cn';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
   GrowthChart,
@@ -16,52 +15,8 @@ import {
   type GrowthPoint,
   type RetentionPoint,
 } from '@/components/analytics/analytics-charts';
-
-// ─── Date range options ────────────────────────────────────────────────────────
-
-const RANGES = [
-  { label: '7d',  days: 7  },
-  { label: '14d', days: 14 },
-  { label: '30d', days: 30 },
-  { label: '90d', days: 90 },
-] as const;
-
-type RangeDays = (typeof RANGES)[number]['days'];
-
-// ─── KPI stat card ─────────────────────────────────────────────────────────────
-
-function KpiCard({
-  icon: Icon,
-  iconBg,
-  iconColor,
-  label,
-  value,
-  delta,
-  up,
-}: {
-  icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
-  label: string;
-  value: string;
-  delta: string;
-  up: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-[#121212] p-4">
-      <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', iconBg)}>
-        <Icon className={cn('h-5 w-5', iconColor)} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-xs text-[#AAAAAA]">{label}</p>
-        <p className="mt-0.5 font-outfit text-xl font-bold text-white">{value}</p>
-      </div>
-      <span className={cn('shrink-0 text-xs font-semibold', up ? 'text-[#34C759]' : 'text-[#FF3B30]')}>
-        {delta}
-      </span>
-    </div>
-  );
-}
+import { KpiCard } from '@/components/analytics/kpi-card';
+import { RangeSelector, type RangeDays } from '@/components/analytics/range-selector';
 
 // ─── Export helper ─────────────────────────────────────────────────────────────
 
@@ -80,7 +35,6 @@ async function triggerExport(days: RangeDays) {
     a.click();
     URL.revokeObjectURL(url);
   } catch {
-    // Fallback: generate a minimal CSV from seed
     const csv = `from,to,exported_at\n${from},${to},${new Date().toISOString()}\n`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
@@ -110,7 +64,7 @@ export default function AnalyticsPage() {
 }
 
 function AnalyticsContent({ canExport }: { canExport: boolean }) {
-  const [range, setRange]     = useState<RangeDays>(30);
+  const [range, setRange]      = useState<RangeDays>(30);
   const [exporting, setExport] = useState(false);
 
   const { data: analyticsData, loading } = useApi<{
@@ -135,29 +89,10 @@ function AnalyticsContent({ canExport }: { canExport: boolean }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-outfit text-2xl font-bold text-white">Analytics</h1>
-          <p className="mt-1 text-sm text-[#AAAAAA]">
-            Platform performance &mdash; last {range} days
-          </p>
+          <p className="mt-1 text-sm text-[#AAAAAA]">Platform performance &mdash; last {range} days</p>
         </div>
-
         <div className="flex items-center gap-3">
-          {/* Range pills */}
-          <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-black/40 p-1">
-            {RANGES.map(({ label, days }) => (
-              <button
-                key={days}
-                onClick={() => setRange(days)}
-                className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
-                  range === days ? 'bg-[#007AFF] text-white' : 'text-[#AAAAAA] hover:text-white',
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Export button — RBAC gated */}
+          <RangeSelector value={range} onChange={setRange} />
           {canExport && (
             <button
               onClick={handleExport}
@@ -187,9 +122,7 @@ function AnalyticsContent({ canExport }: { canExport: boolean }) {
           iconBg="bg-[#34C759]/15"
           iconColor="text-[#34C759]"
           label="New Users (period)"
-          value={growthData
-            .reduce((s, p) => s + p.newUsers, 0)
-            .toLocaleString()}
+          value={growthData.reduce((s, p) => s + p.newUsers, 0).toLocaleString()}
           delta="+12.4%"
           up={true}
         />
@@ -215,16 +148,9 @@ function AnalyticsContent({ canExport }: { canExport: boolean }) {
 
       {/* Chart grid */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Growth spans 2 cols */}
         <GrowthChart data={growthData} />
-
-        {/* Retention — 1 col */}
         <RetentionChart data={retentionData} />
-
-        {/* Funnel — 1 col */}
         <ContentFunnelChart stages={[]} />
-
-        {/* Platform — 1 col */}
         <PlatformChart slices={[]} />
       </div>
     </div>
