@@ -5,11 +5,11 @@ import { GripVertical, User, Video, MessageSquare, ChevronDown, Check } from 'lu
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/cn';
 import { apiClient } from '@/lib/api';
+import { useApi } from '@/lib/hooks/use-api';
 import {
   REPORT_TYPE_LABELS,
   REPORT_TYPE_COLORS,
   PRIORITY_CONFIG,
-  MOCK_MODERATORS,
   type Report,
 } from '@/types/reports';
 
@@ -29,6 +29,14 @@ export function ReportCard({ report, isDragging, onAssign }: ReportCardProps) {
   const [assignOpen, setAssignOpen] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { data: moderatorsData } = useApi<{ admins: Array<{ _id: string; name: string; role: string }> }>(
+    '/admins',
+    { staleTime: 5 * 60 * 1000 },
+  );
+  const moderators = (moderatorsData?.admins ?? []).filter(
+    (a) => a.role === 'moderator' || a.role === 'super_admin',
+  );
 
   const SubjectIcon = SUBJECT_ICONS[report.subject.type];
   const priority = PRIORITY_CONFIG[report.priority];
@@ -125,7 +133,7 @@ export function ReportCard({ report, isDragging, onAssign }: ReportCardProps) {
                     Unassign
                   </button>
                 )}
-                {MOCK_MODERATORS.map((mod) => (
+                {moderators.map((mod) => (
                   <button
                     key={mod._id}
                     onClick={() => handleAssign(mod)}

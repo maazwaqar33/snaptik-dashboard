@@ -73,7 +73,7 @@ function UsersPageContent() {
       )}
 
       {/* Table — uses seed data when API is unavailable */}
-      <UsersTable initialData={isLoading ? undefined : (data?.users ?? undefined)} />
+      <UsersTable initialData={data?.users ?? []} />
     </div>
   );
 }

@@ -35,39 +35,6 @@ import { UserActionModal, type UserAction, nextStatus } from './user-action-moda
 import type { AppUser, UserStatus } from '@/types/platform';
 import { apiClient } from '@/lib/api';
 
-// ─── Mock seed data ──────────────────────────────────────────────────────────
-
-const COUNTRIES = ['US', 'GB', 'IN', 'BR', 'DE', 'FR', 'JP', 'KR', 'AU', 'CA'];
-const STATUSES: UserStatus[] = ['active', 'active', 'active', 'active', 'active', 'banned', 'suspended', 'pending'];
-
-function seedUsers(n: number): AppUser[] {
-  return Array.from({ length: n }, (_, i) => {
-    const id = `user-${String(i + 1).padStart(4, '0')}`;
-    const names = ['Alex Chen', 'Sam Rivera', 'Jordan Kim', 'Taylor Smith', 'Morgan Lee', 'Casey Brown', 'Riley Davis', 'Quinn Wilson', 'Avery Moore', 'Blake Taylor'];
-    const name = names[i % names.length]!;
-    const joined = new Date(Date.now() - Math.random() * 365 * 3 * 24 * 60 * 60 * 1000);
-    return {
-      _id: id,
-      username: `${name.toLowerCase().replace(' ', '_')}${i + 1}`,
-      displayName: `${name} ${i + 1}`,
-      email: `${name.toLowerCase().replace(' ', '.')}${i + 1}@example.com`,
-      status: STATUSES[i % STATUSES.length]!,
-      isVerified: i % 7 === 0,
-      isEmailVerified: i % 12 !== 0,
-      followersCount: Math.floor(Math.random() * 1_000_000),
-      followingCount: Math.floor(Math.random() * 5000),
-      videosCount: Math.floor(Math.random() * 500),
-      likesCount: Math.floor(Math.random() * 5_000_000),
-      createdAt: joined.toISOString(),
-      lastActiveAt: new Date(joined.getTime() + Math.random() * (Date.now() - joined.getTime())).toISOString(),
-      reportCount: Math.floor(Math.random() * 10),
-      country: COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)],
-    };
-  });
-}
-
-const SEED_USERS = seedUsers(200);
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<UserStatus, { dot: string; text: string; label: string }> = {
@@ -159,15 +126,14 @@ function ActionMenu({
 // ─── Main table component ─────────────────────────────────────────────────────
 
 interface UsersTableProps {
-  /** If provided, real API is used; otherwise falls back to seed data */
-  initialData?: AppUser[];
+  initialData: AppUser[];
 }
 
 export function UsersTable({ initialData }: UsersTableProps) {
   const ability = useAbility();
   const canBan = ability.can('ban', 'users');
 
-  const [data, setData] = useState<AppUser[]>(initialData ?? SEED_USERS);
+  const [data, setData] = useState<AppUser[]>(initialData ?? []);
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<UserStatus | 'all'>('all');
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);

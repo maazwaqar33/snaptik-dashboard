@@ -52,7 +52,7 @@ function ReportsPageContent() {
         </div>
       )}
 
-      <ReportsBoard initialColumns={data ?? undefined} />
+      <ReportsBoard initialColumns={data ?? { pending: [], in_review: [], resolved: [] }} />
     </div>
   );
 }

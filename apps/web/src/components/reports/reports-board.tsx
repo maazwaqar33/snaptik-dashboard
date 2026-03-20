@@ -14,50 +14,6 @@ import {
   type KanbanColumns,
 } from '@/types/reports';
 
-// ─── Seed data ─────────────────────────────────────────────────────────────────
-
-const REPORT_TYPES = [
-  'spam', 'harassment', 'impersonation', 'hate_speech', 'violence', 'misinformation', 'other',
-] as const;
-const PRIORITIES: ReportPriority[] = ['high', 'medium', 'medium', 'low', 'low'];
-const SUBJECTS = [
-  { type: 'user' as const,    id: 'usr-001', display: '@user_handle' },
-  { type: 'video' as const,   id: 'vid-001', display: 'Video #a1b2c3' },
-  { type: 'comment' as const, id: 'cmt-001', display: 'Comment on viral post' },
-];
-
-function seedReports(n: number, status: ReportStatus, offset = 0): Report[] {
-  return Array.from({ length: n }, (_, i) => {
-    const idx = offset + i;
-    return {
-      _id: `rep-${status}-${idx}`,
-      reportId: `RPT-${String(idx + 1).padStart(4, '0')}`,
-      type: REPORT_TYPES[idx % REPORT_TYPES.length]!,
-      status,
-      priority: PRIORITIES[idx % PRIORITIES.length]!,
-      subject: SUBJECTS[idx % SUBJECTS.length]!,
-      reporter: { _id: `ru-${idx}`, username: `reporter_${idx + 1}` },
-      assignedTo: status === 'in_review' && idx % 3 !== 0
-        ? { _id: 'mod-1', name: 'Alex Chen' }
-        : undefined,
-      description: 'User submitted this content for review due to policy concerns.',
-      createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - Math.random() * 2 * 60 * 60 * 1000).toISOString(),
-      resolvedAt: status === 'resolved'
-        ? new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString()
-        : undefined,
-    };
-  });
-}
-
-function makeInitialColumns(): KanbanColumns {
-  return {
-    pending:   seedReports(12, 'pending',   0),
-    in_review: seedReports(7,  'in_review', 12),
-    resolved:  seedReports(18, 'resolved',  19),
-  };
-}
-
 // ─── Column config ──────────────────────────────────────────────────────────
 
 interface ColConfig {
@@ -99,13 +55,11 @@ type FilterPriority = ReportPriority | 'all';
 // ─── Board ───────────────────────────────────────────────────────────────────
 
 interface ReportsBoardProps {
-  initialColumns?: KanbanColumns;
+  initialColumns: KanbanColumns;
 }
 
 export function ReportsBoard({ initialColumns }: ReportsBoardProps) {
-  const [columns, setColumns] = useState<KanbanColumns>(
-    initialColumns ?? makeInitialColumns(),
-  );
+  const [columns, setColumns] = useState<KanbanColumns>(initialColumns);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [overColumn, setOverColumn] = useState<keyof KanbanColumns | null>(null);
   const [search, setSearch] = useState('');

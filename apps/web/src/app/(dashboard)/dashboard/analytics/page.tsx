@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Download, TrendingUp, Clock, Users, BarChart3 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { useAbility } from '@/hooks/use-ability';
 import { apiClient } from '@/lib/api';
+import { useApi } from '@/lib/hooks/use-api';
 import { cn } from '@/lib/cn';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
   GrowthChart,
   RetentionChart,
@@ -13,8 +15,6 @@ import {
   PlatformChart,
   type GrowthPoint,
   type RetentionPoint,
-  type FunnelStage,
-  type PlatformSlice,
 } from '@/components/analytics/analytics-charts';
 
 // ─── Date range options ────────────────────────────────────────────────────────
@@ -27,49 +27,6 @@ const RANGES = [
 ] as const;
 
 type RangeDays = (typeof RANGES)[number]['days'];
-
-// ─── Seed generators (replaced by API in production) ─────────────────────────
-
-function makeDayLabels(n: number): string[] {
-  return Array.from({ length: n }, (_, i) =>
-    format(subDays(new Date(), n - 1 - i), n > 30 ? 'MMM d' : 'MMM d'),
-  );
-}
-
-function seedGrowth(days: RangeDays): GrowthPoint[] {
-  const labels = makeDayLabels(days);
-  let mau = 1_050_000;
-  let dau = 140_000;
-  return labels.map((date) => {
-    mau = Math.max(0, mau + Math.floor((Math.random() - 0.28) * 9_000));
-    dau = Math.max(0, dau + Math.floor((Math.random() - 0.32) * 3_500));
-    return { date, mau, dau, newUsers: Math.floor(Math.random() * 5_000 + 600) };
-  });
-}
-
-function seedRetention(days: RangeDays): RetentionPoint[] {
-  // weekly cohorts clipped to the selected range
-  const weeks = Math.max(2, Math.ceil(days / 7));
-  return Array.from({ length: weeks }, (_, i) => ({
-    cohort: `Wk ${i + 1}`,
-    d1:  Math.floor(Math.random() * 20 + 60),
-    d7:  Math.floor(Math.random() * 20 + 35),
-    d30: Math.floor(Math.random() * 20 + 15),
-  }));
-}
-
-const FUNNEL_STAGES: FunnelStage[] = [
-  { label: 'Uploaded',     count: 2_840_000, pct: 100, color: '#007AFF' },
-  { label: 'Processed',    count: 2_665_600, pct: 93.8, color: '#34C759' },
-  { label: 'Published',    count: 2_411_840, pct: 84.9, color: '#FF9500' },
-  { label: 'First view',   count: 1_954_440, pct: 68.8, color: '#FF3B30' },
-];
-
-const PLATFORM_SLICES: PlatformSlice[] = [
-  { name: 'iOS',     value: 621_000, color: '#007AFF' },
-  { name: 'Android', value: 467_000, color: '#34C759' },
-  { name: 'Web',     value: 107_000, color: '#FF9500' },
-];
 
 // ─── KPI stat card ─────────────────────────────────────────────────────────────
 
@@ -156,14 +113,21 @@ function AnalyticsContent({ canExport }: { canExport: boolean }) {
   const [range, setRange]     = useState<RangeDays>(30);
   const [exporting, setExport] = useState(false);
 
-  const growthData    = useMemo(() => seedGrowth(range), [range]);
-  const retentionData = useMemo(() => seedRetention(range), [range]);
+  const { data: analyticsData, loading } = useApi<{
+    growthData?:    Array<{ date: string; users: number; videos: number }>;
+    retentionData?: Array<{ day: number; d1: number; d7: number; d30: number }>;
+  }>(`/analytics/overview?days=${range}`);
+
+  const growthData    = (analyticsData?.growthData    ?? []) as unknown as GrowthPoint[];
+  const retentionData = (analyticsData?.retentionData ?? []) as unknown as RetentionPoint[];
 
   const handleExport = useCallback(async () => {
     setExport(true);
     await triggerExport(range);
     setExport(false);
   }, [range]);
+
+  if (loading) return <LoadingSpinner label="Loading analytics…" />;
 
   return (
     <div className="flex flex-col gap-6">
@@ -214,7 +178,7 @@ function AnalyticsContent({ canExport }: { canExport: boolean }) {
           iconBg="bg-[#007AFF]/15"
           iconColor="text-[#007AFF]"
           label="Monthly Active Users"
-          value={`${(growthData[growthData.length - 1]!.mau / 1_000_000).toFixed(2)}M`}
+          value={growthData.length > 0 ? `${(growthData[growthData.length - 1]!.mau / 1_000_000).toFixed(2)}M` : '—'}
           delta="+8.2%"
           up={true}
         />
@@ -258,10 +222,10 @@ function AnalyticsContent({ canExport }: { canExport: boolean }) {
         <RetentionChart data={retentionData} />
 
         {/* Funnel — 1 col */}
-        <ContentFunnelChart stages={FUNNEL_STAGES} />
+        <ContentFunnelChart stages={[]} />
 
         {/* Platform — 1 col */}
-        <PlatformChart slices={PLATFORM_SLICES} />
+        <PlatformChart slices={[]} />
       </div>
     </div>
   );

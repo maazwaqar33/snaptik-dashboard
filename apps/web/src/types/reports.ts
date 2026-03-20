@@ -71,11 +71,3 @@ export const PRIORITY_CONFIG: Record<ReportPriority, { dot: string; label: strin
   medium: { dot: 'bg-warning', label: 'Medium' },
   low:    { dot: 'bg-muted',   label: 'Low' },
 };
-
-/** Mock moderator list for assignment dropdown */
-export const MOCK_MODERATORS = [
-  { _id: 'mod-1', name: 'Alex Chen' },
-  { _id: 'mod-2', name: 'Sam Rivera' },
-  { _id: 'mod-3', name: 'Jordan Kim' },
-  { _id: 'mod-4', name: 'Taylor Smith' },
-];
