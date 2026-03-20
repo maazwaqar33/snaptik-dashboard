@@ -71,7 +71,8 @@ export async function inviteAdmin(req: Request, res: Response): Promise<void> {
     invitedBy:   req.admin.sub,
   });
 
-  const inviteUrl = `http://localhost:3000/register?token=${inviteToken}`;
+  const frontendUrl = (process.env.FRONTEND_URL ?? 'https://admin.beautybilen.com').replace(/\/$/, '');
+  const inviteUrl   = `${frontendUrl}/register?token=${inviteToken}`;
 
   // Log to console for local dev (SES not yet integrated)
   console.log(`[DEV] Invite URL for ${newAdmin.email}: ${inviteUrl}`);
