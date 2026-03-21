@@ -7,41 +7,12 @@ import { ModerationItem } from './moderation-item';
 import { ModerationDetailPanel } from './moderation-detail-panel';
 import { type FlaggedVideo, type ModerationStatus } from '@/types/moderation';
 
-// ─── Seed data ─────────────────────────────────────────────────────────────────
-
-const FLAG_REASONS = ['hate_speech', 'nudity', 'violence', 'spam', 'misinformation', 'harassment', 'other'] as const;
-const AI_LABELS: Record<string, string[]> = {
-  hate_speech: ['hate_speech', 'offensive_language', 'slur'],
-  nudity: ['nudity', 'sexual_content', 'adult'],
-  violence: ['violence', 'graphic_content', 'blood'],
-  spam: ['spam', 'repetitive_content', 'clickbait'],
-  misinformation: ['misinformation', 'false_claims', 'health_misinformation'],
-  harassment: ['harassment', 'bullying', 'targeted_attack'],
-  other: ['policy_violation'],
-};
-const SEED_QUEUE: FlaggedVideo[] = Array.from({ length: 40 }, (_, i) => {
-  const reason = FLAG_REASONS[i % FLAG_REASONS.length]!;
-  const now = Date.now();
-  return {
-    _id: `flag-${String(i + 1).padStart(3, '0')}`,
-    videoId: `vid-${String(i + 1).padStart(5, '0')}`,
-    thumbnailUrl: undefined, videoUrl: undefined,
-    duration: Math.floor(Math.random() * 55 + 5),
-    uploadedAt: new Date(now - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-    flaggedAt: new Date(now - Math.random() * 2 * 60 * 60 * 1000).toISOString(),
-    uploader: { _id: `user-${i + 1}`, username: `user_${i + 1}`, displayName: `User ${i + 1}`, isVerified: i % 12 === 0 },
-    flagReason: reason, aiConfidence: Math.floor(Math.random() * 45 + 55),
-    aiLabels: AI_LABELS[reason]!, reportCount: Math.floor(Math.random() * 50 + 1),
-    status: 'pending' as ModerationStatus,
-  };
-});
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface ModerationQueueProps { initialItems?: FlaggedVideo[] }
 
 export function ModerationQueue({ initialItems }: ModerationQueueProps) {
-  const [items, setItems]                 = useState<FlaggedVideo[]>(initialItems ?? SEED_QUEUE);
+  const [items, setItems]                 = useState<FlaggedVideo[]>(initialItems ?? []);
   const [activeId, setActiveId]           = useState<string | null>(items[0]?._id ?? null);
   const [loading, setLoading]             = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);

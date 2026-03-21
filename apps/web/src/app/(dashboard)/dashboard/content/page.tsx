@@ -54,7 +54,7 @@ function ContentPageInner() {
       </div>
 
       {isError && (
-        <ErrorBanner message="Could not reach API — showing seed data for development" />
+        <ErrorBanner message="Could not reach API — moderation queue may be incomplete" />
       )}
 
       <ModerationQueue initialItems={data ?? undefined} />

@@ -70,10 +70,9 @@ function UsersPageContent() {
       </div>
 
       {isError && (
-        <ErrorBanner message="Could not reach API — showing seed data for development" />
+        <ErrorBanner message="Could not reach API — user list may be incomplete" />
       )}
 
-      {/* Table — uses seed data when API is unavailable */}
       <UsersTable initialData={data?.users ?? []} />
     </div>
   );

@@ -48,7 +48,7 @@ function ReportsPageContent() {
       </div>
 
       {isError && (
-        <ErrorBanner message="Could not reach API — showing seed data for development" />
+        <ErrorBanner message="Could not reach API — reports may be incomplete" />
       )}
 
       <ReportsBoard initialColumns={data ?? { pending: [], in_review: [], resolved: [] }} />
