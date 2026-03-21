@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import { Admin, type IAdmin } from '../models/admin.model';
 import { AuditLog } from '../models/audit.model';
+import { sendInviteEmail } from '../lib/email';
 
 // An admin is considered "online" if they acted within the last 5 minutes
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
@@ -74,9 +75,6 @@ export async function inviteAdmin(req: Request, res: Response): Promise<void> {
   const frontendUrl = (process.env.FRONTEND_URL ?? 'https://admin.beautybilen.com').replace(/\/$/, '');
   const inviteUrl   = `${frontendUrl}/register?token=${inviteToken}`;
 
-  // Log to console for local dev (SES not yet integrated)
-  console.log(`[DEV] Invite URL for ${newAdmin.email}: ${inviteUrl}`);
-
   await AuditLog.create({
     adminId:    req.admin.sub,
     adminName:  req.admin.name,
@@ -89,6 +87,15 @@ export async function inviteAdmin(req: Request, res: Response): Promise<void> {
     ipAddress:  req.ip,
     userAgent:  req.headers['user-agent'],
   });
+
+  // Send invite email (non-blocking — don't fail the request if email fails)
+  sendInviteEmail({
+    toEmail:     newAdmin.email,
+    toName:      newAdmin.name,
+    inviteUrl,
+    inviterName: req.admin.name,
+    role,
+  }).catch((err) => console.error('[Email] Failed to send invite:', err));
 
   res.status(201).json({
     message:     'Invite created. Send the inviteUrl to the new admin.',

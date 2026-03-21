@@ -12,6 +12,8 @@ export const config = {
   cookieSecure:     process.env.COOKIE_SECURE  === 'true',
   cookieSameSite:  (process.env.COOKIE_SAME_SITE ?? 'strict') as 'strict' | 'lax' | 'none',
   corsOrigin:       process.env.CORS_ORIGIN ?? 'http://localhost:3000',
+  sesFromEmail:     process.env.SES_FROM_EMAIL ?? 'noreply@snaptik.com',
+  awsRegion:        process.env.AWS_REGION     ?? 'eu-north-1',
 } as const;
 
 export async function connectDB(): Promise<void> {
