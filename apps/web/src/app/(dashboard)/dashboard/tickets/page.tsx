@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Ticket as TicketIcon } from 'lucide-react';
 import { useAbility } from '@/hooks/use-ability';
+import { useApi } from '@/lib/hooks/use-api';
+import { apiClient } from '@/lib/api';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import { TicketsTable } from '@/components/tickets/tickets-table';
-import { seedTickets, type Ticket, type TicketStatus } from '@/types/tickets';
-
-// Stable seed (module-level so it doesn't re-create on re-render)
-const INITIAL_TICKETS = seedTickets(40);
+import { type Ticket, type TicketStatus } from '@/types/tickets';
 
 export default function TicketsPage() {
   const ability = useAbility();
@@ -25,13 +26,16 @@ export default function TicketsPage() {
 }
 
 function TicketsContent() {
-  const [tickets, setTickets] = useState<Ticket[]>(INITIAL_TICKETS);
+  const { data: ticketsData, loading, error, refetch } = useApi<{ tickets: Ticket[]; total: number }>('/tickets?limit=100');
+  const tickets = ticketsData?.tickets ?? [];
 
-  const handleStatusChange = useCallback((ticketId: string, status: TicketStatus) => {
-    setTickets((prev) =>
-      prev.map((t) => (t._id === ticketId ? { ...t, status } : t)),
-    );
-  }, []);
+  const handleStatusChange = useCallback(async (ticketId: string, status: TicketStatus) => {
+    await apiClient.patch(`/tickets/${ticketId}/status`, { status }).catch(() => null);
+    refetch();
+  }, [refetch]);
+
+  if (loading) return <LoadingSpinner label="Loading tickets…" />;
+  if (error)   return <ErrorBanner message={error} onRetry={refetch} />;
 
   const open       = tickets.filter((t) => t.status === 'open').length;
   const inProgress = tickets.filter((t) => t.status === 'in_progress').length;

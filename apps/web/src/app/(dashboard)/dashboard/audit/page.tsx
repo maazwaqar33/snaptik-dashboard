@@ -2,62 +2,16 @@
 
 import { useState, useMemo } from 'react';
 import { Download, Shield } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { useAbility } from '@/hooks/use-ability';
+import { useApi } from '@/lib/hooks/use-api';
 import { apiClient } from '@/lib/api';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import { AuditFilters } from '@/components/audit/audit-filters';
 import { AuditLogTable, type AuditEvent } from '@/components/audit/audit-log-table';
 
-// ─── Seed data ─────────────────────────────────────────────────────────────────
-
-type AuditAction =
-  | 'login' | 'logout'
-  | 'ban_user' | 'warn_user' | 'unban_user'
-  | 'delete_content' | 'approve_content' | 'flag_content'
-  | 'close_report' | 'assign_report'
-  | 'reply_ticket' | 'close_ticket'
-  | 'invite_admin' | 'deactivate_admin'
-  | 'update_settings' | 'export_data';
-
-const ACTORS = [
-  { _id: 'a1', name: 'Alex Chen',    role: 'super_admin' },
-  { _id: 'a2', name: 'Sam Rivera',   role: 'moderator'   },
-  { _id: 'a3', name: 'Jordan Kim',   role: 'support'     },
-  { _id: 'a4', name: 'Taylor Smith', role: 'analyst'     },
-];
-
-const EVENT_TEMPLATES: Array<{ action: AuditAction; resourceType: string; details: string }> = [
-  { action: 'ban_user',        resourceType: 'user',     details: 'Banned for harassment in comments'          },
-  { action: 'delete_content',  resourceType: 'video',    details: 'Removed violating content'                 },
-  { action: 'close_report',    resourceType: 'report',   details: 'Resolved — content removed'                },
-  { action: 'approve_content', resourceType: 'video',    details: 'Cleared after manual review'               },
-  { action: 'warn_user',       resourceType: 'user',     details: 'First warning issued for spam'             },
-  { action: 'reply_ticket',    resourceType: 'ticket',   details: 'Replied to user support query'             },
-  { action: 'invite_admin',    resourceType: 'admin',    details: 'Invited new support agent'                 },
-  { action: 'update_settings', resourceType: 'settings', details: 'Updated AI confidence threshold to 88%'    },
-  { action: 'export_data',     resourceType: 'report',   details: 'Exported compliance report (last 90 days)' },
-  { action: 'login',           resourceType: 'session',  details: 'Successful login'                          },
-];
-
-function seedAudit(n = 80): AuditEvent[] {
-  return Array.from({ length: n }, (_, i) => {
-    const template = EVENT_TEMPLATES[i % EVENT_TEMPLATES.length]!;
-    const actor    = ACTORS[i % ACTORS.length]!;
-    return {
-      _id:          `evt-${i}`,
-      actor,
-      action:       template.action,
-      resourceType: template.resourceType,
-      resourceId:   `${template.resourceType.slice(0, 3).toUpperCase()}-${String(i + 1).padStart(4, '0')}`,
-      details:      template.details,
-      ip:           `192.168.${Math.floor(i / 20)}.${(i * 7) % 255}`,
-      createdAt:    subDays(new Date(), Math.floor(i / 4)).toISOString(),
-    };
-  });
-}
-
-const AUDIT_EVENTS = seedAudit(80);
-const PAGE_SIZE    = 20;
+const PAGE_SIZE = 20;
 
 async function exportAudit(events: AuditEvent[]) {
   try {
@@ -90,27 +44,8 @@ export default function AuditLogPage() {
   const [page,         setPage]         = useState(0);
   const [exporting,    setExporting]    = useState(false);
 
-  const filtered = useMemo(() =>
-    AUDIT_EVENTS.filter((e) => {
-      if (actionFilter !== 'all' && !e.resourceType.includes(actionFilter) && !e.action.includes(actionFilter))
-        return false;
-      if (search) {
-        const q = search.toLowerCase();
-        return (
-          e.actor.name.toLowerCase().includes(q) ||
-          e.action.includes(q) ||
-          e.resourceId.toLowerCase().includes(q) ||
-          e.details.toLowerCase().includes(q) ||
-          e.ip.includes(q)
-        );
-      }
-      return true;
-    }),
-    [search, actionFilter],
-  );
-
-  const pageCount  = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageEvents = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const { data: auditData, loading, error } = useApi<{ logs: AuditEvent[]; total: number }>('/audit?limit=100');
+  const AUDIT_EVENTS = auditData?.logs ?? [];
 
   if (!ability.can('read', 'auditlog')) {
     return (
@@ -120,6 +55,28 @@ export default function AuditLogPage() {
       </div>
     );
   }
+
+  if (loading) return <LoadingSpinner label="Loading audit log…" />;
+  if (error)   return <ErrorBanner message={error} />;
+
+  const filtered = AUDIT_EVENTS.filter((e) => {
+    if (actionFilter !== 'all' && !e.resourceType.includes(actionFilter) && !e.action.includes(actionFilter))
+      return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (
+        e.actor.name.toLowerCase().includes(q) ||
+        e.action.includes(q) ||
+        e.resourceId.toLowerCase().includes(q) ||
+        e.details.toLowerCase().includes(q) ||
+        e.ip.includes(q)
+      );
+    }
+    return true;
+  });
+
+  const pageCount  = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageEvents = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-5">

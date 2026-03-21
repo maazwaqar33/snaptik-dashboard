@@ -5,18 +5,11 @@ import { UserCog, UserPlus, X, ToggleLeft, ToggleRight, Check } from 'lucide-rea
 import { formatDistanceToNow } from 'date-fns';
 import { useAuthStore } from '@/store/auth';
 import { apiClient } from '@/lib/api';
+import { useApi } from '@/lib/hooks/use-api';
 import { cn } from '@/lib/cn';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import { ROLE_PERMISSIONS, ROLE_LABELS, type AdminRole, type AdminUser } from '@snaptik/types';
-
-// ─── Seed admins ──────────────────────────────────────────────────────────────
-
-const SEED_ADMINS: AdminUser[] = [
-  { _id: 'a1', email: 'alex@snaptik.com',   name: 'Alex Chen',    role: 'super_admin', customPermissions: [], isActive: true,  lastLoginAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),          createdAt: new Date(Date.now() - 180 * 86400000).toISOString(), updatedAt: new Date().toISOString() },
-  { _id: 'a2', email: 'sam@snaptik.com',    name: 'Sam Rivera',   role: 'moderator',   customPermissions: [], isActive: true,  lastLoginAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),            createdAt: new Date(Date.now() - 90  * 86400000).toISOString(), updatedAt: new Date().toISOString() },
-  { _id: 'a3', email: 'jordan@snaptik.com', name: 'Jordan Kim',   role: 'support',     customPermissions: [], isActive: true,  lastLoginAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),          createdAt: new Date(Date.now() - 45  * 86400000).toISOString(), updatedAt: new Date().toISOString() },
-  { _id: 'a4', email: 'taylor@snaptik.com', name: 'Taylor Smith', role: 'analyst',     customPermissions: [], isActive: false, lastLoginAt: new Date(Date.now() - 14 * 86400000).toISOString(),              createdAt: new Date(Date.now() - 30  * 86400000).toISOString(), updatedAt: new Date().toISOString() },
-  { _id: 'a5', email: 'morgan@snaptik.com', name: 'Morgan Lee',   role: 'auditor',     customPermissions: [], isActive: true,  lastLoginAt: new Date(Date.now() - 3  * 86400000).toISOString(),              createdAt: new Date(Date.now() - 15  * 86400000).toISOString(), updatedAt: new Date().toISOString() },
-];
 
 const ROLE_BADGE: Record<AdminRole, string> = {
   super_admin: 'bg-[#007AFF]/20 text-[#007AFF]',
@@ -30,7 +23,7 @@ const ROLES: AdminRole[] = ['super_admin', 'moderator', 'support', 'analyst', 'a
 
 // ─── Invite modal ─────────────────────────────────────────────────────────────
 
-function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (a: AdminUser) => void }) {
+function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: () => void }) {
   const [email, setEmail] = useState('');
   const [name,  setName]  = useState('');
   const [role,  setRole]  = useState<AdminRole>('moderator');
@@ -43,8 +36,7 @@ function InviteModal({ onClose, onInvited }: { onClose: () => void; onInvited: (
     setBusy(true); setError('');
     try {
       await apiClient.post('/admins/invite', { email, name, role }).catch(() => null);
-      onInvited({ _id: `tmp-${Date.now()}`, email, name, role, customPermissions: [], isActive: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-      onClose();
+      onInvited();
     } finally { setBusy(false); }
   };
 
@@ -132,8 +124,10 @@ function PermissionsMatrix() {
 
 export default function AdminsPage() {
   const currentAdmin = useAuthStore((s) => s.admin);
-  const [admins,     setAdmins]     = useState<AdminUser[]>(SEED_ADMINS);
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  const { data: adminsData, loading, error, refetch } = useApi<{ admins: AdminUser[] }>('/admins');
+  const admins = adminsData?.admins ?? [];
 
   if (currentAdmin?.role !== 'super_admin') {
     return (
@@ -144,9 +138,12 @@ export default function AdminsPage() {
     );
   }
 
+  if (loading) return <LoadingSpinner label="Loading admins…" />;
+  if (error)   return <ErrorBanner message={error} onRetry={refetch} />;
+
   const toggleActive = async (id: string) => {
-    setAdmins((prev) => prev.map((a) => (a._id === id ? { ...a, isActive: !a.isActive } : a)));
     await apiClient.patch(`/admins/${id}/toggle-active`).catch(() => null);
+    refetch();
   };
 
   return (
@@ -155,7 +152,9 @@ export default function AdminsPage() {
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h1 className="font-outfit text-2xl font-bold text-white">Admin Management</h1>
-            <p className="mt-1 text-sm text-[#AAAAAA]">{admins.length} admins &mdash; {admins.filter((a) => a.isActive).length} active</p>
+            <p className="mt-1 text-sm text-[#AAAAAA]">
+              {admins.length} admins &mdash; {admins.filter((a) => a.isActive).length} active
+            </p>
           </div>
           <button onClick={() => setInviteOpen(true)}
             className="flex items-center gap-2 rounded-lg bg-[#007AFF] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#007AFF]/80">
@@ -204,7 +203,7 @@ export default function AdminsPage() {
       {inviteOpen && (
         <InviteModal
           onClose={() => setInviteOpen(false)}
-          onInvited={(a) => setAdmins((prev) => [a, ...prev])}
+          onInvited={() => { setInviteOpen(false); refetch(); }}
         />
       )}
     </div>
