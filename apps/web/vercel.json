@@ -1,4 +1,6 @@
 {
-  "installCommand": "npm install -g pnpm@10.21.0 && cd ../.. && pnpm install --frozen-lockfile",
-  "framework": "vite"
+  "framework": "vite",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
 }
