@@ -7,17 +7,24 @@ import { useAbility } from '@/hooks/use-ability';
 import { apiClient } from '@/lib/api';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorBanner } from '@/components/ui/error-banner';
-import type { PaginatedUsers } from '@/types/platform';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import type { AppUser } from '@/types/platform';
 
-async function fetchUsers(): Promise<PaginatedUsers> {
-  const { data } = await apiClient.get<PaginatedUsers>('/users?limit=200&page=1');
+// The mock returns { users: [...], data: [...] } — support both
+interface UsersResponse {
+  users?: AppUser[];
+  data?:  AppUser[];
+  total:  number;
+}
+
+async function fetchUsers(): Promise<UsersResponse> {
+  const { data } = await apiClient.get<UsersResponse>('/users?limit=200&page=1');
   return data;
 }
 
 export default function UsersPage() {
   const ability = useAbility();
 
-  // RBAC guard — if admin can't read users, show nothing
   if (!ability.can('read', 'users')) {
     return (
       <EmptyState
@@ -36,9 +43,12 @@ function UsersPageContent() {
     queryKey: ['users'],
     queryFn: fetchUsers,
     retry: 1,
-    // Don't refetch automatically — user data changes on action, not on a timer
     refetchOnWindowFocus: false,
   });
+
+  const users: AppUser[] = data?.users ?? data?.data ?? [];
+
+  if (isLoading) return <LoadingSpinner label="Loading users…" />;
 
   return (
     <div className="flex flex-col gap-5">
@@ -51,19 +61,19 @@ function UsersPageContent() {
           </p>
         </div>
         {/* Quick stats */}
-        {data && (
+        {users.length > 0 && (
           <div className="hidden items-center gap-4 sm:flex">
             <div className="flex items-center gap-1.5 text-xs text-muted">
               <Users className="h-3.5 w-3.5" />
-              <span>{data.users.length.toLocaleString()} total</span>
+              <span>{users.length.toLocaleString()} total</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-danger">
               <UserX className="h-3.5 w-3.5" />
-              <span>{data.users.filter((u) => u.status === 'banned').length} banned</span>
+              <span>{users.filter((u) => u.status === 'banned').length} banned</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-success">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>{data.users.filter((u) => u.isVerified).length} verified</span>
+              <span>{users.filter((u) => u.isVerified).length} verified</span>
             </div>
           </div>
         )}
@@ -73,7 +83,7 @@ function UsersPageContent() {
         <ErrorBanner message="Could not reach API — user list may be incomplete" />
       )}
 
-      <UsersTable initialData={data?.users ?? []} />
+      <UsersTable initialData={users} />
     </div>
   );
 }

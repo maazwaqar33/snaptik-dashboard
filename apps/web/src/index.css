@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-outfit: 'Outfit', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --color-accent: #007AFF;
+  --color-success: #34C759;
+  --color-warning: #FF9500;
+  --color-danger: #FF3B30;
+  --color-muted: #AAAAAA;
+  --color-surface: #121212;
+}
+
+:root {
+  --bg: 0 0% 0%;
+  --surface: 0 0% 7%;
+  --surface-border: 0 0% 100% / 0.1;
+  --text-primary: 0 0% 100%;
+  --text-secondary: 0 0% 67%;
+  --accent: 211 100% 50%;
+  --danger: 4 100% 59%;
+  --success: 142 76% 54%;
+  --warning: 35 100% 50%;
+  --radius: 0.75rem;
+}
+
+* {
+  border-color: rgba(255,255,255,0.1);
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+.font-outfit { font-family: 'Outfit', sans-serif; }
+.font-inter { font-family: 'Inter', sans-serif; }
+.bg-surface { background-color: #121212; }
+.text-muted { color: #AAAAAA; }
+.border-surface { border-color: rgba(255,255,255,0.1); }

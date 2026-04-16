@@ -10,8 +10,8 @@ import { ErrorBanner } from '@/components/ui/error-banner';
 import type { FlaggedVideo } from '@/types/moderation';
 
 async function fetchQueue(): Promise<FlaggedVideo[]> {
-  const { data } = await apiClient.get<{ items: FlaggedVideo[] }>('/content/moderation-queue');
-  return data.items;
+  const { data } = await apiClient.get<{ items?: FlaggedVideo[]; data?: FlaggedVideo[] }>('/content/moderation-queue');
+  return data.items ?? data.data ?? [];
 }
 
 export default function ContentModerationPage() {
